@@ -1,0 +1,129 @@
+{
+  "name": "Barath Suresh",
+  "contact": "Your City, State  |  (000) 000-0000  |  your-email@example.com  |  linkedin.com/in/your-handle  |  github.com/your-handle  |  your-site.github.io",
+  "summary": null,
+  "education": [
+    {
+      "school": "Arizona State University",
+      "location": "Tempe, AZ",
+      "degree": "Master of Science in Computer Science",
+      "dates": "August 2025 – May 2027",
+      "extra": [
+        "GPA: 3.67/4.00",
+        "<i>Relevant Coursework:</i> Cloud Computing(AWS), Data Processing at Scale, Artificial Intelligence, Foundations of Algorithms"
+      ]
+    },
+    {
+      "school": "SASTRA Deemed University",
+      "location": "India",
+      "degree": "Bachelor of Technology in Computer Science",
+      "dates": "August 2020 – May 2024",
+      "extra": []
+    }
+  ],
+  "skills": [
+    ["Languages",               "Java, Python, Go, TypeScript, Kotlin, C/C++"],
+    ["Backend & Microservices", "Spring Boot, Spring WebFlux, Spring Cloud Gateway, Spring Security, Node.js, FastAPI, REST APIs, Microservices, Distributed Systems, System Design, JWT, OAuth 2.0"],
+    ["Frontend",                "React, HTML/CSS, Vanilla.js, Vue.js"],
+    ["AI/ML & RAG",             "NVIDIA NIM (Embeddings + Chat), Retrieval-Augmented Generation, Vector Search (pgvector), Semantic Search, LLM Integration, tree-sitter, Prompt Engineering"],
+    ["AI Tooling",               "Claude Code, Cursor, GitHub Copilot"],
+    ["Data & Messaging",        "Kafka, RabbitMQ, Redis, MongoDB, PostgreSQL, WebSocket, MQTT"],
+    ["DevOps & Observability",  "Terraform, Kubernetes, Docker, GCP, AWS, Azure AD, GitHub Actions, CI/CD, Linux, JUnit, Grafana, Loki, Zipkin, Prometheus"]
+  ],
+  "experience": [
+    {
+      "company":  "TATA ELXSI LTD",
+      "role":     "Software Development Engineer",
+      "location": "Chennai, India",
+      "dates":    "December 2024 – July 2025",
+      "bullets": [
+        "<b>Cut incident detection time by 65%</b> (2 hours to 40 minutes), by building an AI-driven log anomaly detection service with Spring AI and Gemma 3, replacing manual triage across 6 microservices",
+        "Redesigned Excel ingestion from synchronous to async processing via RabbitMQ, <b>reducing processing time by 70%</b> on 20,000-row files with real-time SSE progress updates, unblocking internal teams dependent on weekly data refreshes",
+        "Introduced centralized log aggregation, real-time monitoring, and automated error alerts, by containerizing a 6-service stack (backend, RabbitMQ worker, frontend, Prometheus, Grafana, Loki) with Docker Compose",
+        "<b>Cut authorization latency 93%</b> (100ms to 7ms) across 50+ secured endpoints, by embedding Azure AD role claims directly into JWT at authentication time in Spring Security, eliminating per-request group lookups",
+        "Eliminated ~50% of server errors by adding a centralized global exception handler in Spring Boot, catching unhandled exceptions that had been crashing services mid-request"
+      ]
+    },
+    {
+      "company":  "TATA ELXSI LTD",
+      "role":     "Software Development Engineer Intern",
+      "location": "Bengaluru, India",
+      "dates":    "January 2024 – June 2024",
+      "bullets": [
+        "Delivered live set-top box telemetry to internal test teams by combining MQTT and FastAPI ingestion with a WebSocket relay layer, replacing the after-the-fact log inspection they relied on during validation",
+        "Exposed system metrics from the telemetry pipeline in Grafana dashboards, giving test teams a live view of device and service health instead of ad hoc queries against raw MQTT streams"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "title":    "SIFT – Code RAG CLI for Codebase Q&A",
+      "link":     "GitHub",
+      "link_url": "https://github.com/barathsuresh/sift",
+      "tech":     "Python, PostgreSQL/pgvector, tree-sitter, NVIDIA NIM, Rich, pytest",
+      "bullets": [
+        "<b>Cut full re-index time from ~36 minutes to ~6 seconds</b> on a 150K-chunk codebase, by adding incremental re-indexing that only reprocesses files changed since the last run via version-control diffs",
+        "<b>Tripled embedding throughput</b> on a 24,000-file, 150K-chunk benchmark (full Kubernetes repo), by rewriting serialized API calls into a bounded concurrent thread pool that saturates the provider's rate limit",
+        "Root-caused and eliminated a deadlock freezing the entire embedding pool, by diagnosing a lock-held-during-sleep bug via live thread wait-state inspection and rewriting it as a non-blocking sliding-window rate limiter",
+        "Fused semantic vector search with keyword/symbol search via Reciprocal Rank Fusion, dynamically sizing retrieval to fit the model's context budget, and grounded every answer with exact file:line citations"
+      ]
+    },
+    {
+      "title":    "AEROFEED – Real-Time Flight Tracking Pipeline",
+      "link":     "GitHub",
+      "link_url": "https://github.com/barathsuresh/aerofeed",
+      "tech":     "AWS (Lambda, Kinesis, DynamoDB, API Gateway WebSocket, EventBridge, CloudFront), Terraform, GitHub Actions, Python",
+      "bullets": [
+        "Built a live aircraft-tracking web app that renders real-time flight positions on an interactive map, ingesting public ADS-B telemetry through a serverless AWS pipeline and pushing updates to browsers as aircraft move",
+        "<b>Cut worst-case first-connection-to-data latency by up to 60s</b>, by eagerly invoking the ingest poller on WebSocket connect instead of waiting on the next scheduled EventBridge tick, streaming telemetry over a Kinesis, Lambda, DynamoDB pipeline fanned out via API Gateway WebSockets",
+        "<b>Cut idle infrastructure cost to near-zero</b>, by wiring EventBridge Rule scheduling directly to WebSocket connection lifecycle so the ingest pipeline auto-disables within 60 seconds of the last client disconnecting",
+        "<b>Eliminated static AWS credentials</b> from CI/CD, by authenticating GitHub Actions through OIDC with a scoped IAM trust policy, and hardened the Kinesis-to-Lambda link with bounded retries, an SQS dead-letter queue, and partial batch failure handling validated against 10 CloudWatch alarms"
+      ]
+    },
+    {
+      "title":    "GEOLINK – Real-Time Location Aware Autocomplete API",
+      "link":     "GitHub",
+      "link_url": "https://github.com/barathsuresh/geolink",
+      "tech":     "Go, Typesense, Kafka, Redis, PostgreSQL, K8s, Vanilla.js",
+      "bullets": [
+        "<b>Cut a 13.4M-record data import from ~45 minutes to under 8 minutes</b>, by streaming 50K-record batches through a parallel worker pool and publishing search events to Kafka asynchronously to keep the live API unaffected",
+        "Surfaced locally relevant results over globally popular ones for geo-ambiguous queries, by running a secondary country-filtered search when one country dominates a user's history and merging results before re-ranking",
+        "Built an opt-in personalization engine using 4 IP-history signals (country, continent, place-type, and recent-query match) to re-rank results without requiring user accounts, across 13.4M global place names"
+      ]
+    },
+    {
+      "title":    "THROTTLR – Self-Serve Rate Limiting Engine",
+      "link":     "GitHub",
+      "link_url": "https://github.com/barathsuresh/throttlr",
+      "tech":     "GCP, Spring Boot, Redis, Lua, Cloud Run, Terraform, React",
+      "bullets": [
+        "Tuned Cloud Run CPU, memory, concurrency, and autoscaling, and provisioned infra via Terraform, <b>boosting throughput 11.2x</b> (9.8 to 109.5 req/sec) across 20K requests with zero errors and 182ms mean latency; built and deployed a React + TypeScript dashboard on GitHub Pages for account, rule, and analytics management",
+        "Implemented atomic Redis Lua scripts across three rate limiting algorithms (fixed window, token bucket, sliding window) to eliminate race conditions from concurrent read-then-write checks",
+        "Removed blocking I/O from the critical path, by keeping Redis exclusive to real-time allow/block decisions and offloading analytics persistence to a scheduled MongoDB flush"
+      ]
+    },
+    {
+      "title":    "PRISM – Distributed Video Streaming Platform",
+      "link":     "GitHub",
+      "link_url": "https://github.com/barathsuresh/prism",
+      "tech":     "Microservices, Observability, S3, Spring Boot",
+      "bullets": [
+        "<b>Enabled uploads up to 5GB</b> with fully async transcoding into 6 HLS adaptive bitrate tiers (144p-1080p), by decoupling ingestion from FFmpeg processing across 8 microservices",
+        "Set up distributed tracing and metrics across all 8 services with Zipkin, Prometheus, and Loki, giving request-level visibility into service health and latency across the pipeline",
+        "Secured API access with API key authentication and BCrypt hashing, ensuring every request is scoped to the correct app and preventing cross-app data access"
+      ]
+    }
+  ],
+  "open_source": [
+    {
+      "title":    "EchoMusic – Android Music App",
+      "link":     "GitHub",
+      "link_url": "https://github.com/EchoMusicApp/Echo-Music/pull/770",
+      "tech":     "Kotlin, Room, Jetpack Compose, Gradle",
+      "bullets": [
+        "Built a DSP based beat-matching engine for seamless song transitions (BPM detection, spectral analysis, tempo-synced crossfades), merged into a 2,000+ starred, 140+ forked production Android app",
+        "Diagnosed and fixed a silent audio data-corruption bug caused by incorrect byte-order handling in the decoding pipeline, an issue that would have broken every tempo reading in production"
+      ]
+    }
+  ]
+}

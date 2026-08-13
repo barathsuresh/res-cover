@@ -1,0 +1,7 @@
+ollama
+reportlab
+pdfplumber
+streamlit
+python-dotenv
+google-genai
+jsonschema

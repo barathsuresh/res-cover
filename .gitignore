@@ -1,0 +1,23 @@
+# Secrets
+.env
+contact.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local runtime state (machine-specific, auto-regenerated)
+runtime_config.json
+
+# Personal data — job history, generated resumes/cover letters (PII)
+jobs.db
+outputs/
+
+# OS / editor
+.DS_Store
+.claude/
+
+# Personal PDFs (PII / unused by code — sample CL text is baked into pipeline.py)
+Barath_Suresh_Resume.pdf
+Sample_CL.pdf
