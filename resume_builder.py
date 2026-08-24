@@ -288,7 +288,7 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
 
     # ── Projects ──
     story.append(section_gap())
-    story.append(Paragraph("Projects", S["section"]))
+    story.append(Paragraph("Project Experience", S["section"]))
     story.append(hr())
 
     for i, proj in enumerate(data["projects"]):
