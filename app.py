@@ -47,7 +47,12 @@ def _connect():
     return sqlite3.connect(DB_PATH)
 
 
-def _fetch_jobs(status_filter: str = "All", search: str = "", exclude_archived: bool = False) -> list:
+def _fetch_jobs(
+    status_filter: str = "All",
+    search: str = "",
+    exclude_archived: bool = False,
+    exclude_important: bool = False,
+) -> list:
     conn = _connect()
     query = "SELECT id, company, role, status, job_link, error, tag_version, tag_rating, tag_report FROM jobs"
     params = []
@@ -55,8 +60,13 @@ def _fetch_jobs(status_filter: str = "All", search: str = "", exclude_archived: 
     if status_filter != "All":
         conditions.append("status = ?")
         params.append(status_filter.lower())
-    elif exclude_archived:
-        conditions.append("status != 'archived'")
+    else:
+        if exclude_archived:
+            conditions.append("status != 'archived'")
+        # Important jobs live on their own page, so the general Jobs list
+        # doesn't repeat them.
+        if exclude_important:
+            conditions.append("status != 'important'")
     if search:
         conditions.append("(company LIKE ? OR role LIKE ?)")
         params += [f"%{search}%", f"%{search}%"]
@@ -123,7 +133,7 @@ def _counts() -> dict:
     conn = _connect()
     rows = conn.execute("SELECT status, COUNT(*) FROM jobs GROUP BY status").fetchall()
     conn.close()
-    result = {"pending": 0, "done": 0, "failed": 0, "archived": 0}
+    result = {"pending": 0, "done": 0, "failed": 0, "important": 0, "archived": 0}
     for status, count in rows:
         result[status or "pending"] = count
     return result
@@ -150,6 +160,42 @@ def _output_paths(company: str, role: str):
 DOWNLOAD_RESUME_NAME = "Barath_Suresh_Master_Resume.pdf"
 
 
+def _next_free_path(out_dir: Path, file_name: str) -> Path:
+    """First name in out_dir that isn't taken — name.pdf, name (1).pdf, ..."""
+    candidate = out_dir / file_name
+    stem, suffix = candidate.stem, candidate.suffix
+    n = 1
+    while candidate.exists():
+        candidate = out_dir / f"{stem} ({n}){suffix}"
+        n += 1
+    return candidate
+
+
+def _save_button(label: str, data: bytes, file_name: str, key: str):
+    """Save straight to config.DOWNLOAD_DIR instead of a browser save dialog —
+    lets the folder be configured once in the sidebar and reused everywhere.
+    A same-named file is replaced or kept depending on the sidebar's
+    "Overwrite existing files" setting."""
+    if st.button(label, key=key):
+        try:
+            out_dir = Path(config.DOWNLOAD_DIR).expanduser()
+            out_dir.mkdir(parents=True, exist_ok=True)
+            if config.OVERWRITE_DOWNLOADS:
+                out_path = out_dir / file_name
+                existed = out_path.exists()
+                out_path.write_bytes(data)
+                st.toast(f"{'Replaced' if existed else 'Saved'} {out_path}", icon="✅")
+            else:
+                out_path = _next_free_path(out_dir, file_name)
+                out_path.write_bytes(data)
+                if out_path.name != file_name:
+                    st.toast(f"{file_name} existed — saved as {out_path.name}", icon="✅")
+                else:
+                    st.toast(f"Saved to {out_path}", icon="✅")
+        except OSError as e:
+            st.error(f"Couldn't save to {config.DOWNLOAD_DIR}: {e}")
+
+
 def _rating_str(rating) -> str:
     return f"{rating:g}/10" if rating is not None else "unrated"
 
@@ -168,8 +214,8 @@ def _tagged_file_path(report: str | None) -> Path | None:
 #  UI COMPONENTS
 # ═══════════════════════════════════════════════
 
-STATUS_BADGE = {"pending": "🟡", "done": "🟢", "failed": "🔴", "archived": "🗄️"}
-STATUS_LABEL = {"pending": "Pending", "done": "Done", "failed": "Failed", "archived": "Archived"}
+STATUS_BADGE = {"pending": "🟡", "done": "🟢", "failed": "🔴", "important": "⭐", "archived": "🗄️"}
+STATUS_LABEL = {"pending": "Pending", "done": "Done", "failed": "Failed", "important": "Important", "archived": "Archived"}
 
 
 def _status_badge(status: str) -> str:
@@ -238,8 +284,18 @@ def _job_card(row: tuple, expanded: bool = False):
                 _update_job(job_id, status="pending", error=None)
                 st.rerun()
 
+        # Mark / Unmark important
+        if status == "important":
+            if st.button("↩️ Unmark Important", key=f"unimportant_{job_id}"):
+                _update_job(job_id, status="pending")
+                st.rerun()
+        elif status != "archived":
+            if st.button("⭐ Mark Important", key=f"important_{job_id}"):
+                _update_job(job_id, status="important")
+                st.rerun()
+
         # Archive / Unarchive
-        if status == "done":
+        if status in ("done", "important"):
             if st.button("🗄️ Archive", key=f"archive_{job_id}"):
                 _update_job(job_id, status="archived")
                 st.rerun()
@@ -249,25 +305,21 @@ def _job_card(row: tuple, expanded: bool = False):
                 st.rerun()
 
         # Download PDFs
-        if status in ("done", "archived") and company and role:
+        if status in ("done", "important", "archived") and company and role:
             res_path, cl_path = _output_paths(company, role)
             d1, d2, _ = st.columns([1.5, 1.5, 5])
             if res_path.exists():
-                d1.download_button(
-                    "⬇️ Resume",
-                    res_path.read_bytes(),
-                    file_name=DOWNLOAD_RESUME_NAME,
-                    mime="application/pdf",
-                    key=f"dl_res_{job_id}",
-                )
+                with d1:
+                    _save_button(
+                        "⬇️ Resume", res_path.read_bytes(),
+                        DOWNLOAD_RESUME_NAME, key=f"dl_res_{job_id}",
+                    )
             if cl_path.exists():
-                d2.download_button(
-                    "⬇️ Cover Letter",
-                    cl_path.read_bytes(),
-                    file_name=f"{_safe(company)}_CoverLetter.pdf",
-                    mime="application/pdf",
-                    key=f"dl_cl_{job_id}",
-                )
+                with d2:
+                    _save_button(
+                        "⬇️ Cover Letter", cl_path.read_bytes(),
+                        f"{_safe(company)}_CoverLetter.pdf", key=f"dl_cl_{job_id}",
+                    )
 
         # Resume version tag
         st.divider()
@@ -294,12 +346,9 @@ def _job_card(row: tuple, expanded: bool = False):
                 st.code(tag_report)
             tagged_path = _tagged_file_path(tag_report)
             if tagged_path and tagged_path.exists():
-                st.download_button(
-                    f"⬇️ {tag_version} resume",
-                    tagged_path.read_bytes(),
-                    file_name=DOWNLOAD_RESUME_NAME,
-                    mime="application/pdf",
-                    key=f"dl_tag_{job_id}",
+                _save_button(
+                    f"⬇️ {tag_version} resume", tagged_path.read_bytes(),
+                    DOWNLOAD_RESUME_NAME, key=f"dl_tag_{job_id}",
                 )
 
         # Error
@@ -471,7 +520,7 @@ def _edit_form(job_id: int):
             height=120,
             placeholder="Optional — extra instructions/context for the cover letter (leave blank for default style).",
         )
-        _status_opts = ["pending", "done", "failed", "archived"]
+        _status_opts = ["pending", "done", "failed", "important", "archived"]
         new_status  = st.selectbox(
             "Status",
             _status_opts,
@@ -522,16 +571,42 @@ with st.sidebar:
     st.title("📄 Job Pipeline")
     st.divider()
     counts = _counts()
-    st.metric("🟡 Pending",  counts["pending"])
-    st.metric("🟢 Done",     counts["done"])
-    st.metric("🔴 Failed",   counts["failed"])
-    st.metric("🗄️ Archived", counts["archived"])
+    st.metric("🟡 Pending",   counts["pending"])
+    st.metric("🟢 Done",      counts["done"])
+    st.metric("🔴 Failed",    counts["failed"])
+    st.metric("⭐ Important", counts["important"])
+    st.metric("🗄️ Archived",  counts["archived"])
     st.divider()
     page = st.radio(
         "Navigate",
-        ["🏠 Dashboard", "➕ Add Job", "📋 Jobs", "▶️ Run Pipeline", "🗄️ Archive"],
+        ["🏠 Dashboard", "⚡ Quick Apply", "➕ Add Job", "📋 Jobs", "⭐ Important", "▶️ Run Pipeline", "🗄️ Archive"],
         label_visibility="collapsed",
     )
+
+    st.divider()
+
+    # ── Download location ─────────────────────
+    with st.expander("📁 Download Location", expanded=False):
+        new_dir = st.text_input(
+            "Save PDFs to",
+            value=config.DOWNLOAD_DIR,
+            key="download_dir_input",
+        )
+        if new_dir != config.DOWNLOAD_DIR:
+            config.set_download_dir(new_dir)
+            st.caption("Saved.")
+        st.caption(f"Currently: `{config.DOWNLOAD_DIR}`")
+
+        overwrite = st.toggle(
+            "Overwrite existing files",
+            value=config.OVERWRITE_DOWNLOADS,
+            key="overwrite_downloads_toggle",
+            help="On: a same-named PDF in that folder is replaced. "
+                 "Off: it's kept and the new one saves as \"name (1).pdf\".",
+        )
+        if overwrite != config.OVERWRITE_DOWNLOADS:
+            config.set_overwrite_downloads(overwrite)
+            st.rerun()
 
     st.divider()
 
@@ -596,11 +671,12 @@ with st.sidebar:
 if page == "🏠 Dashboard":
     st.header("Dashboard")
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("🟡 Pending",  counts["pending"])
-    c2.metric("🟢 Done",     counts["done"])
-    c3.metric("🔴 Failed",   counts["failed"])
-    c4.metric("🗄️ Archived", counts["archived"])
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("🟡 Pending",   counts["pending"])
+    c2.metric("🟢 Done",      counts["done"])
+    c3.metric("🔴 Failed",    counts["failed"])
+    c4.metric("⭐ Important", counts["important"])
+    c5.metric("🗄️ Archived",  counts["archived"])
 
     st.divider()
 
@@ -623,6 +699,97 @@ if page == "🏠 Dashboard":
     st.divider()
     if counts["pending"] > 0:
         st.info(f"{counts['pending']} pending job(s) ready. Go to **▶️ Run Pipeline** to process.")
+
+
+# ═══════════════════════════════════════════════
+#  QUICK APPLY — paste JD, get resume + cover letter immediately.
+#  No separate add-then-run step: this adds the job to the jobs table AND
+#  processes it in one click, then serves the PDFs right here.
+# ═══════════════════════════════════════════════
+elif page == "⚡ Quick Apply":
+    st.header("Quick Apply")
+    st.caption("Paste a JD, hit Generate. Job is logged to the table automatically — no separate Add Job step.")
+
+    with st.form("quick_apply_form"):
+        jd = st.text_area(
+            "Job Description",
+            height=380,
+            placeholder="Paste the full job description here...",
+            key="quick_apply_jd",
+        )
+        c1, c2, c3 = st.columns(3)
+        company = c1.text_input("Company (optional)", placeholder="Leave blank — LLM extracts from JD", key="quick_apply_company")
+        link = c2.text_input("Job Link (optional)", placeholder="https://...", key="quick_apply_link")
+        run_mode = c3.radio(
+            "What to generate", ["Resume + Cover Letter", "Cover Letter Only"],
+            key="quick_apply_mode",
+        )
+        cl_personalization = st.text_area(
+            "Cover Letter Personalization",
+            height=90,
+            placeholder="Optional — extra instructions/context for the cover letter.",
+            key="quick_apply_cl",
+        )
+        force = st.checkbox(
+            "Force generate (ignore visa sponsorship gate)",
+            key="quick_apply_force",
+        )
+        submitted = st.form_submit_button("⚡ Generate", type="primary", use_container_width=True)
+
+    if submitted:
+        if not jd.strip():
+            st.error("Job description is required.")
+        else:
+            from pipeline import _process_job
+
+            add_job(link.strip(), jd.strip(), company.strip(), "", cl_personalization.strip())
+            conn = _connect()
+            job_id = conn.execute(
+                "SELECT id FROM jobs WHERE jd = ? ORDER BY id DESC LIMIT 1", (jd.strip(),)
+            ).fetchone()[0]
+            conn.close()
+
+            mode = "cover_letter" if run_mode == "Cover Letter Only" else "both"
+            with st.spinner("Generating..."):
+                try:
+                    company, role = _process_job(job_id, link.strip(), jd.strip(), company.strip(), "", cl_personalization.strip(), mode, force)
+                    _update_job(job_id, status="done", company=company, role=role, error=None)
+                    # Persist the result: the download buttons below are plain
+                    # st.buttons, and clicking one reruns the script with the
+                    # form no longer "submitted". Without this the buttons would
+                    # disappear the moment you used them.
+                    st.session_state["_qa_result"] = {
+                        "job_id": job_id, "company": company, "role": role,
+                    }
+                except Exception:
+                    err = traceback.format_exc()
+                    _update_job(job_id, status="failed", error=err)
+                    st.session_state.pop("_qa_result", None)
+                    st.error("Generation failed.")
+                    st.code(err, language="python")
+
+    result = st.session_state.get("_qa_result")
+    if result:
+        job_id, company, role = result["job_id"], result["company"], result["role"]
+        st.success(f"Done — {company} / {role}")
+        res_path, cl_path = _output_paths(company, role)
+        d1, d2, d3 = st.columns([1.5, 1.5, 5])
+        if res_path.exists():
+            with d1:
+                _save_button(
+                    "⬇️ Resume", res_path.read_bytes(),
+                    DOWNLOAD_RESUME_NAME, key=f"qa_dl_res_{job_id}",
+                )
+        if cl_path.exists():
+            with d2:
+                _save_button(
+                    "⬇️ Cover Letter", cl_path.read_bytes(),
+                    f"{_safe(company)}_CoverLetter.pdf", key=f"qa_dl_cl_{job_id}",
+                )
+        with d3:
+            if st.button("✖️ Clear", key=f"qa_clear_{job_id}"):
+                st.session_state.pop("_qa_result", None)
+                st.rerun()
 
 
 # ═══════════════════════════════════════════════
@@ -712,7 +879,7 @@ elif page == "📋 Jobs":
     if fc3.button("🔄 Refresh", use_container_width=True):
         st.rerun()
 
-    rows = _fetch_jobs(status_filter, search, exclude_archived=True)
+    rows = _fetch_jobs(status_filter, search, exclude_archived=True, exclude_important=True)
 
     if not rows:
         st.info("No jobs match the filter.")
@@ -782,6 +949,34 @@ elif page == "📋 Jobs":
 
 
 # ═══════════════════════════════════════════════
+#  IMPORTANT — starred jobs get their own page so they don't get lost
+#  in the general Jobs list.
+# ═══════════════════════════════════════════════
+elif page == "⭐ Important":
+    st.header("Important")
+    st.caption("Jobs you starred. Mark or unmark from any job card.")
+
+    ic1, ic2 = st.columns([3, 1])
+    imp_search = ic1.text_input(
+        "Search",
+        placeholder="Search company or role...",
+        label_visibility="collapsed",
+        key="important_search",
+    )
+    if ic2.button("🔄 Refresh", key="important_refresh", use_container_width=True):
+        st.rerun()
+
+    rows = _fetch_jobs("Important", imp_search)
+
+    if not rows:
+        st.info("No important jobs. Star one from the Jobs page.")
+    else:
+        st.caption(f"{len(rows)} important job(s)")
+        for row in rows:
+            _job_card(row, expanded=False)
+
+
+# ═══════════════════════════════════════════════
 #  RUN PIPELINE
 # ═══════════════════════════════════════════════
 elif page == "▶️ Run Pipeline":
@@ -821,6 +1016,8 @@ elif page == "▶️ Run Pipeline":
                 "so you upload your own resume plus this letter."
             )
 
+        force = st.checkbox("Force generate (ignore visa sponsorship gate)", key="run_pipeline_force")
+
         if st.button(
             f"▶️ Run {len(to_run)} job(s)",
             type="primary",
@@ -855,7 +1052,7 @@ elif page == "▶️ Run Pipeline":
                     jid, jlink, jjd, jcompany, jrole, jcl_personalization = row
                     try:
                         final_company, final_role = _process_job(
-                            jid, jlink or "", jjd or "", jcompany or "", jrole or "", jcl_personalization or "", mode
+                            jid, jlink or "", jjd or "", jcompany or "", jrole or "", jcl_personalization or "", mode, force
                         )
                         conn.execute(
                             "UPDATE jobs SET status='done', company=?, role=?, error=NULL WHERE id=?",

@@ -26,9 +26,11 @@ def _truncate(s: str, n: int) -> str:
 
 
 STATUS_COLOR = {
-    "pending": "\033[33m",   # yellow
-    "done":    "\033[32m",   # green
-    "failed":  "\033[31m",   # red
+    "pending":   "\033[33m",   # yellow
+    "done":      "\033[32m",   # green
+    "failed":    "\033[31m",   # red
+    "important": "\033[35m",   # magenta
+    "archived":  "\033[90m",   # gray
 }
 RESET = "\033[0m"
 

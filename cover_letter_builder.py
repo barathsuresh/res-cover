@@ -54,6 +54,8 @@ def build_cover_letter(text: str, company: str, role: str, output_path: str):
         title=f"Cover Letter – {company} – {role}",
         author=name,
         subject="Cover Letter",
+        creator="",
+        producer="",
     )
 
     story = []

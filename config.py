@@ -33,14 +33,39 @@ TIMEOUTS = {
 
 HEALTH_TIMEOUT = 20  # seconds — health check fails fast, unlike a real call
 
+DEFAULT_DOWNLOAD_DIR = str(Path.home() / "Downloads")
+
+# When a file of the same name already sits in the download folder: True
+# replaces it, False keeps it and saves alongside as "name (1).pdf".
+DEFAULT_OVERWRITE_DOWNLOADS = True
+
 _OVERRIDE_PATH = Path(__file__).with_name("runtime_config.json")
 
 PROVIDER = DEFAULT_PROVIDER
 MODELS = dict(DEFAULT_MODELS)
+DOWNLOAD_DIR = DEFAULT_DOWNLOAD_DIR
+OVERWRITE_DOWNLOADS = DEFAULT_OVERWRITE_DOWNLOADS
+
+
+def _write_overrides() -> None:
+    try:
+        _OVERRIDE_PATH.write_text(
+            json.dumps(
+                {
+                    "provider": PROVIDER,
+                    "models": MODELS,
+                    "download_dir": DOWNLOAD_DIR,
+                    "overwrite_downloads": OVERWRITE_DOWNLOADS,
+                },
+                indent=2,
+            )
+        )
+    except OSError:
+        pass  # read-only fs — runtime switch still applies for this process
 
 
 def _load_overrides() -> None:
-    global PROVIDER
+    global PROVIDER, DOWNLOAD_DIR, OVERWRITE_DOWNLOADS
     try:
         saved = json.loads(_OVERRIDE_PATH.read_text())
     except (OSError, ValueError):
@@ -50,6 +75,26 @@ def _load_overrides() -> None:
     for name, model in (saved.get("models") or {}).items():
         if name in PROVIDERS and model:
             MODELS[name] = model
+    if saved.get("download_dir"):
+        DOWNLOAD_DIR = saved["download_dir"]
+    if isinstance(saved.get("overwrite_downloads"), bool):
+        OVERWRITE_DOWNLOADS = saved["overwrite_downloads"]
+
+
+def set_overwrite_downloads(overwrite: bool, persist: bool = True) -> None:
+    """Choose whether saving a PDF replaces a same-named file or keeps both."""
+    global OVERWRITE_DOWNLOADS
+    OVERWRITE_DOWNLOADS = bool(overwrite)
+    if persist:
+        _write_overrides()
+
+
+def set_download_dir(path: str, persist: bool = True) -> None:
+    """Switch where downloaded PDFs get saved. Persisted alongside provider settings."""
+    global DOWNLOAD_DIR
+    DOWNLOAD_DIR = path
+    if persist:
+        _write_overrides()
 
 
 def set_provider(provider: str, model: str | None = None, persist: bool = True) -> None:
@@ -61,12 +106,7 @@ def set_provider(provider: str, model: str | None = None, persist: bool = True) 
     if model:
         MODELS[provider] = model
     if persist:
-        try:
-            _OVERRIDE_PATH.write_text(
-                json.dumps({"provider": PROVIDER, "models": MODELS}, indent=2)
-            )
-        except OSError:
-            pass  # read-only fs — runtime switch still applies for this process
+        _write_overrides()
 
 
 def model(provider: str | None = None) -> str:

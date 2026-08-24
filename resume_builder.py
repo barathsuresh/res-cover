@@ -163,6 +163,8 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
         title=data["name"],
         author=data["name"],
         subject="Resume",
+        creator="",
+        producer="",
     )
 
     S = build_styles(leading)
@@ -204,19 +206,7 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
 
     for item in data["skills"]:
         label, value = item[0], item[1]
-        row = Table(
-            [[Paragraph(f"<b>{esc(label)}:</b>", S["body"]),
-              Paragraph(esc(value), S["body"])]],
-            colWidths=[1.72 * inch, None],
-        )
-        row.setStyle(TableStyle([
-            ("VALIGN",       (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING",  (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING",   (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING",(0, 0), (-1, -1), 0),
-        ]))
-        story.append(row)
+        story.append(Paragraph(f"<b>{esc(label)}:</b> {esc(value)}", S["body"]))
 
     # ── Experience ──
     story.append(spacer(2))
@@ -237,7 +227,7 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
 
     # ── Projects ──
     story.append(spacer(2))
-    story.append(Paragraph("Projects", S["section"]))
+    story.append(Paragraph("Project Experience", S["section"]))
     story.append(hr())
 
     for i, proj in enumerate(data["projects"]):

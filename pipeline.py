@@ -523,18 +523,28 @@ COVER LETTER RULES:
 - Do NOT start consecutive sentences with "I". Vary sentence structure. 9th-grade reading level.
 - NEVER use em dashes or en dashes anywhere in the letter.{cl_block}
 
+SKILL GAPS — this is the ONLY place you may add a word that isn't already in the base content above:
+- If the JD explicitly requires or strongly emphasizes a specific technology/skill that is NOT anywhere in the
+  skill categories above (check every category first — do not add something already present under a different name),
+  you may add it to the most fitting category, but ONLY as an honest gap-fill, never as claimed hands-on experience.
+- List at most 3 of these, and only the ones the JD treats as important — do not pad for the sake of it.
+- Do NOT add something the candidate could reasonably already cover via an adjacent skill already listed
+  (e.g. do not add "SQL" if PostgreSQL is already listed; do not add "Java 21" if Java is already listed).
+- These render as plain skill entries — you supply only the bare skill name and its category.
+
 OUTPUT — return ONLY this JSON, no markdown, no explanation:
 {{
   "project_order": ["<title>", "<title>", "<title>"],
   "project_bullet_order": [[0,1,2], [0,1,2,3], [0,1,2]],
   "skill_category_order": ["<category label>", "..."],
   "skill_item_order": [[0,1,2], "..."],
+  "skill_gaps": [{{"category": "<one of the base category labels above>", "skill": "<bare skill name, no tag>"}}],
   "experience_bullet_order": [[0,1,2,3], [0,1]],
   "include_open_source": true,
   "open_source_bullet_order": [0,1],
   "cover_letter_text": "Dear Hiring Team, ... (full letter, no signature line)"
 }}
-Field notes: project_bullet_order is parallel to project_order (one permutation array per chosen project, in that order). skill_item_order is parallel to skill_category_order. experience_bullet_order is parallel to the base EXPERIENCE list order shown above (index 0 = first experience entry), each array is a selection+order of that entry's bullet indices at the required length. open_source_bullet_order is only used when include_open_source is true.""")
+Field notes: project_bullet_order is parallel to project_order (one permutation array per chosen project, in that order). skill_item_order is parallel to skill_category_order. experience_bullet_order is parallel to the base EXPERIENCE list order shown above (index 0 = first experience entry), each array is a selection+order of that entry's bullet indices at the required length. open_source_bullet_order is only used when include_open_source is true. skill_gaps may be an empty list — omit entries rather than force 3.""")
 
     return "\n".join(lines)
 
@@ -551,12 +561,28 @@ _REORDER_SCHEMA = {
         "project_bullet_order": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}}},
         "skill_category_order": {"type": "array", "items": {"type": "string"}},
         "skill_item_order": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}}},
+        "skill_gaps": {
+            "type": "array", "maxItems": 3,
+            "items": {
+                "type": "object", "required": ["category", "skill"],
+                "properties": {"category": {"type": "string"}, "skill": {"type": "string"}},
+            },
+        },
         "experience_bullet_order": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}}},
         "include_open_source": {"type": "boolean"},
         "open_source_bullet_order": {"type": "array", "items": {"type": "integer"}},
         "cover_letter_text": {"type": "string"},
     },
 }
+
+
+def _title_key(title: str) -> str:
+    """Normalized key for matching an LLM-supplied project title against base
+    data. Collapses dash variants and whitespace and drops non-alphanumerics, so
+    "NEUROSCRIBE - Foo", "NEUROSCRIBE \u2013 Foo" and "neuroscribe: foo" all match.
+    Falls back to the leading name token, which is unique across the projects."""
+    norm = re.sub(r"[^a-z0-9]+", " ", (title or "").lower()).strip()
+    return norm or ""
 
 
 def _permute(base: list, order) -> list | None:
@@ -594,7 +620,34 @@ def _resolve_reorder(orders: dict) -> dict:
 
     base_by_title = {p["title"]: p for p in BASE_RESUME_DATA["projects"]}
     titles = orders.get("project_order") or []
-    picked = [t for t in titles if t in base_by_title][:_PROJECT_PICK_COUNT]
+    # Match on a normalized key, not the raw string: base titles use an en dash
+    # ("NEUROSCRIBE - ...") and models reliably echo them back with an ASCII
+    # hyphen, so exact matching silently dropped every pick and fell back to
+    # base order — i.e. the same three projects on every JD.
+    by_key = {_title_key(t): t for t in base_by_title}
+    # Also key on the leading name token ("THROTTLR"), which is unique across the
+    # projects, so a model that shortens or retitles still resolves.
+    by_name = {}
+    for t in base_by_title:
+        by_name.setdefault(_title_key(t).split(" ")[0], t)
+
+    def _resolve_title(raw: str) -> str | None:
+        key = _title_key(raw)
+        if key in by_key:
+            return by_key[key]
+        head = key.split(" ")[0] if key else ""
+        if head in by_name:
+            return by_name[head]
+        return next((base for name, base in by_name.items() if name and name in key), None)
+
+    picked = []
+    for t in titles:
+        resolved = _resolve_title(t)
+        if resolved and resolved not in picked:
+            picked.append(resolved)
+        if len(picked) >= _PROJECT_PICK_COUNT:
+            break
+    picked = picked[:_PROJECT_PICK_COUNT]
     for p in BASE_RESUME_DATA["projects"]:
         if len(picked) >= _PROJECT_PICK_COUNT:
             break
@@ -618,13 +671,35 @@ def _resolve_reorder(orders: dict) -> dict:
             cat_order.append(cat)
     item_orders = orders.get("skill_item_order") or []
     cat_index = {c: i for i, (c, _) in enumerate(BASE_RESUME_DATA["skills"])}
+
+    # Honest gap-fill: JD-required skills genuinely absent from base data render
+    # render as plain skill entries, indistinguishable from base skills.
+    # Capped at 3 (schema maxItems), deduped against every existing skill everywhere.
+    all_existing_lower = {s.lower() for items in base_skills.values() for s in items}
+    gap_by_cat: dict[str, list[str]] = {}
+    seen_gap_skills = set()
+    for g in orders.get("skill_gaps") or []:
+        if not isinstance(g, dict):
+            continue
+        skill = str(g.get("skill", "")).strip()
+        cat = str(g.get("category", "")).strip()
+        if not skill or cat not in base_skills:
+            continue
+        key = skill.lower()
+        if key in all_existing_lower or key in seen_gap_skills:
+            continue
+        seen_gap_skills.add(key)
+        gap_by_cat.setdefault(cat, []).append(skill)
+
     new_skills = []
     for cat in cat_order:
         items = base_skills[cat]
         src_i = cat_index[cat]
         order_i = item_orders[src_i] if src_i < len(item_orders) else None
         permuted = _permute(items, order_i)
-        new_skills.append([cat, ", ".join(permuted if permuted is not None else items)])
+        final_items = list(permuted if permuted is not None else items)
+        final_items += gap_by_cat.get(cat, [])
+        new_skills.append([cat, ", ".join(final_items)])
     data["skills"] = new_skills
 
     base_os = BASE_RESUME_DATA.get("open_source") or []
@@ -809,7 +884,7 @@ OUTPUT: Return ONLY the following JSON schema, no markdown, no explanation:
 #  CORE JOB PROCESSOR
 # ─────────────────────────────────────────────
 
-def _process_job(job_id: int, job_link: str, jd: str, company: str, role: str, cl_personalization: str = "", mode: str = "both") -> tuple[str, str]:
+def _process_job(job_id: int, job_link: str, jd: str, company: str, role: str, cl_personalization: str = "", mode: str = "both", force: bool = False) -> tuple[str, str]:
     # Step 1: Extract company/role if blank
     if not company or not role:
         print(f"  [job {job_id}] Extracting company/role from JD...")
@@ -821,9 +896,12 @@ def _process_job(job_id: int, job_link: str, jd: str, company: str, role: str, c
     # Step 1b: Visa sponsorship gate — fail fast before spending LLM tokens
     print(f"  [job {job_id}] Checking visa sponsorship...")
     sponsorship, reason = _check_sponsorship(jd)
-    if sponsorship == "no":
-        raise RuntimeError(f"Rejected: Company does not offer visa sponsorship. {reason}")
-    print(f"  [job {job_id}] Sponsorship: {sponsorship} — {reason or 'no issues'}")
+    if sponsorship == "no" and not force:
+        raise RuntimeError(f"Rejected: Company does not offer visa sponsorship. {reason} (use --force to generate anyway)")
+    if sponsorship == "no" and force:
+        print(f"  [job {job_id}] Sponsorship: no — {reason or 'no issues'} — forced, continuing anyway")
+    else:
+        print(f"  [job {job_id}] Sponsorship: {sponsorship} — {reason or 'no issues'}")
 
     # Step 2: Build output directory
     safe_company = _sanitize(company)
@@ -949,7 +1027,7 @@ def _process_job(job_id: int, job_link: str, jd: str, company: str, role: str, c
 #  PIPELINE ENTRYPOINT
 # ─────────────────────────────────────────────
 
-def run_pipeline(mode: str = "both"):
+def run_pipeline(mode: str = "both", force: bool = False):
     conn = sqlite3.connect(DB_PATH)
     rows = conn.execute(
         "SELECT id, job_link, jd, company, role, cl_personalization FROM jobs WHERE status = 'pending'"
@@ -966,7 +1044,7 @@ def run_pipeline(mode: str = "both"):
         job_id, job_link, jd, company, role, cl_personalization = row
         print(f"\nProcessing job {job_id}...")
         try:
-            final_company, final_role = _process_job(job_id, job_link, jd, company or "", role or "", cl_personalization or "", mode)
+            final_company, final_role = _process_job(job_id, job_link, jd, company or "", role or "", cl_personalization or "", mode, force)
             conn.execute(
                 "UPDATE jobs SET status = 'done', company = ?, role = ?, error = NULL WHERE id = ?",
                 (final_company, final_role, job_id),
@@ -993,5 +1071,9 @@ if __name__ == "__main__":
              "entirely; 'tag' generates nothing and instead picks the best existing resume version "
              "from the library with a fit rating out of 10",
     )
+    parser.add_argument(
+        "--force", action="store_true",
+        help="Generate even if the visa sponsorship gate rejects the job",
+    )
     args = parser.parse_args()
-    run_pipeline(args.mode)
+    run_pipeline(args.mode, args.force)

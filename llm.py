@@ -206,10 +206,27 @@ def health_check(provider: str | None = None, model: str | None = None) -> dict:
     return report
 
 
+_UNICODE_MAP = {
+    "‐": "-", "‑": "-", "‒": "-", "–": "-", "—": "-", "―": "-",
+    "‘": "'", "’": "'", "“": '"', "”": '"',
+    "…": "...", "→": "to", "←": "from", "−": "-", " ": " ",
+}
+
+
+def _sanitize(text: str) -> str:
+    """LLM output sometimes carries Unicode punctuation (non-breaking hyphens,
+    smart quotes, arrows) with no glyph in the resume's base-14 Times fonts —
+    renders as a black box in the PDF. Map known offenders to ASCII, drop
+    anything else outside latin-1 so it never reaches the renderer."""
+    for uni, ascii_ in _UNICODE_MAP.items():
+        text = text.replace(uni, ascii_)
+    return text.encode("latin-1", "ignore").decode("latin-1")
+
+
 def _parse_json(text: str) -> dict:
     cleaned = re.sub(r"^```(?:json)?\s*", "", text.strip())
     cleaned = re.sub(r"\s*```$", "", cleaned).strip()
-    return json.loads(cleaned)
+    return json.loads(_sanitize(cleaned))
 
 
 _OUTPUT_SCHEMA = {
