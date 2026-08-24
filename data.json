@@ -27,7 +27,8 @@
     ["Frontend",                "React, HTML/CSS, Vanilla.js, Vue.js"],
     ["AI/ML",                   "NVIDIA NIM, Retrieval-Augmented Generation (RAG), Vector Search (pgvector), LoRA/QLoRA Finetuning, PEFT (Parameter-Efficient Fine-Tuning), MONAI, Large Language Model (LLM) Evaluation, Prompt Engineering"],
     ["Data & Messaging",        "Kafka, RabbitMQ, Redis, MongoDB, PostgreSQL, WebSocket, MQTT"],
-    ["DevOps & Cloud",          "Terraform, Kubernetes (K8s), Docker, AWS (Amazon Web Services), GCP (Google Cloud Platform), CI/CD (Continuous Integration/Continuous Delivery), Linux, Prometheus, Grafana, Git"]
+    ["DevOps & Cloud",          "Terraform, Kubernetes (K8s), Docker, AWS (Amazon Web Services), GCP (Google Cloud Platform), CI/CD (Continuous Integration/Continuous Delivery), Linux, Prometheus, Grafana, Git"],
+    ["Mobile & Android",        "Flutter, Dart, Android Studio, Firebase (Auth, Firestore), AES Encryption, Google Sign-In"]
   ],
   "experience": [
     {
@@ -125,6 +126,28 @@
         "<b>Decoupled ingestion from FFmpeg processing</b> across 8 microservices, enabling async transcoding of uploads up to 5GB into 6 HLS adaptive bitrate tiers",
         "Instrumented distributed tracing and metrics across all 8 services with Zipkin, Prometheus, and Loki for request-level visibility into service health and latency",
         "Scoped every request to its origin app with API key authentication and BCrypt hashing, preventing cross-app data access"
+      ]
+    },
+    {
+      "title":    "HEXSCRIPT – Privacy-First Encrypted Notes App",
+      "link":     "GitHub",
+      "link_url": "https://github.com/barathsuresh/HexScript",
+      "tech":     "Flutter, Dart, Hive, Firebase (Auth, Firestore), AES-256, Google Sign-In, Provider",
+      "bullets": [
+        "<b>Encrypted every note client-side with AES-256</b> before it touched local Hive storage, so plaintext content never persisted to disk",
+        "Built an offline-first sync layer so the app stays fully usable without connectivity, reconciling local Hive changes against Firebase once the network returns",
+        "Tied per-user encryption keys to Google Sign-In / Firebase Auth identity, so no account can decrypt another user's notes even from a shared device"
+      ]
+    },
+    {
+      "title":    "HELIUMMESSENGER – Privacy-Focused Encrypted Messenger",
+      "link":     "GitHub",
+      "link_url": "https://github.com/barathsuresh/HeliumMessenger",
+      "tech":     "Flutter, Dart, Firebase (Firestore, Auth), AES Encryption",
+      "bullets": [
+        "<b>Encrypted every message client-side with AES</b> before it left the device, so Firebase's backend never stored or transmitted plaintext content",
+        "Delivered real-time message sync across devices on Firebase Firestore listeners instead of polling",
+        "Shipped from a single Flutter codebase to Android, iOS, and desktop/web targets rather than maintaining separate native implementations"
       ]
     }
   ]
