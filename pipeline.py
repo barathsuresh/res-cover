@@ -27,7 +27,7 @@ from resume_tagger import extract_resume_text, format_report, tag_resume_version
 # ─────────────────────────────────────────────
 
 _CL_STYLE_SAMPLE = """\
-Dear Hiring Team,
+Dear Hiring Manager,
 
 Identity management at Apple's scale, billions of customers, planet-scale availability, and \
 mission-critical security, is one of the most consequential backend problems in the industry. The \
@@ -136,7 +136,7 @@ _OUTPUT_SCHEMA = {
         ],
     },
     "cover_letter_text": (
-        "string — full cover letter starting with 'Dear Hiring Team,' through final paragraph. No signature line. "
+        "string — full cover letter starting with 'Dear Hiring Manager,' through final paragraph. No signature line. "
         "Voice: confident, direct, human — written like one engineer talking to another over coffee, not a formal application. "
         "CRITICAL: Do NOT copy, paraphrase, or reword any resume bullet. Write entirely from scratch as if recalling "
         "the work from memory in a conversation. A human writing a cover letter does not read their resume while writing it — "
@@ -542,7 +542,7 @@ OUTPUT — return ONLY this JSON, no markdown, no explanation:
   "experience_bullet_order": [[0,1,2,3], [0,1]],
   "include_open_source": true,
   "open_source_bullet_order": [0,1],
-  "cover_letter_text": "Dear Hiring Team, ... (full letter, no signature line)"
+  "cover_letter_text": "Dear Hiring Manager, ... (full letter, no signature line)"
 }}
 Field notes: project_bullet_order is parallel to project_order (one permutation array per chosen project, in that order). skill_item_order is parallel to skill_category_order. experience_bullet_order is parallel to the base EXPERIENCE list order shown above (index 0 = first experience entry), each array is a selection+order of that entry's bullet indices at the required length. open_source_bullet_order is only used when include_open_source is true. skill_gaps may be an empty list — omit entries rather than force 3.""")
 
@@ -783,7 +783,7 @@ a list of metrics is not.
 - Do NOT invent experience, employers, degrees, or metrics absent from the resume above.{cl_personalization_block}
 
 OUTPUT: Return ONLY this JSON, no markdown, no explanation:
-{{"cover_letter_text": "Dear Hiring Team, ... (full letter, no signature line)"}}"""
+{{"cover_letter_text": "Dear Hiring Manager, ... (full letter, no signature line)"}}"""
 
     result = call_llm(SYSTEM_PROMPT, user, schema=None)
     text = (result.get("cover_letter_text") or "").strip()

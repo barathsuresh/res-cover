@@ -2,8 +2,13 @@
 Cover letter PDF builder using reportlab.
 Usage: build_cover_letter(text, company, role, output_path)
 
-text: full letter body starting with "Dear Hiring Team," through final paragraph.
-      Header, date, closing ("Sincerely,"), and signature are appended automatically.
+text: full letter body starting with "Dear Hiring Manager," through final
+      paragraph. Date, recipient block, closing ("Sincerely,") and signature
+      are appended automatically.
+
+Layout is a classic block-format business letter — everything flush left,
+no letterhead banner, no rule, no color — the way a formal letter is
+actually laid out, not a resume header repeated on a second page.
 """
 
 import datetime
@@ -11,25 +16,21 @@ import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_LEFT, TA_CENTER
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
-from reportlab.lib import colors
+from reportlab.lib.enums import TA_LEFT
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
-LM = RM = 0.75 * inch
-TM = BM = 0.65 * inch
+LM = RM = 1.0 * inch
+TM = BM = 1.0 * inch
 
-_BASE  = dict(fontName="Arial", fontSize=10.5, leading=15)
-_BOLD  = dict(fontName="Arial-Bold",  fontSize=10.5, leading=15)
-_SMALL = dict(fontName="Arial", fontSize=9.5,  leading=13)
+_BASE = dict(fontName="Arial", fontSize=11, leading=16)
 
 STYLES = {
-    "name":    ParagraphStyle("cl_name",    fontName="Arial-Bold",   fontSize=16, leading=20, alignment=TA_LEFT, spaceAfter=2),
-    "contact": ParagraphStyle("cl_contact", fontName="Arial",  fontSize=9,  leading=12, alignment=TA_LEFT, spaceAfter=0, textColor=colors.HexColor("#444444")),
-    "date":    ParagraphStyle("cl_date",    **_BASE, spaceAfter=0),
-    "to":      ParagraphStyle("cl_to",      **_BASE, spaceAfter=0),
-    "body":    ParagraphStyle("cl_body",    **_BASE, spaceAfter=10),
-    "closing": ParagraphStyle("cl_closing", **_BASE, spaceAfter=0),
-    "sig":     ParagraphStyle("cl_sig",     **_BOLD, spaceAfter=0),
+    "sender":  ParagraphStyle("cl_sender",  **_BASE, alignment=TA_LEFT, spaceAfter=0),
+    "date":    ParagraphStyle("cl_date",    **_BASE, alignment=TA_LEFT, spaceAfter=0),
+    "to":      ParagraphStyle("cl_to",      **_BASE, alignment=TA_LEFT, spaceAfter=0),
+    "body":    ParagraphStyle("cl_body",    **_BASE, alignment=TA_LEFT, spaceAfter=12),
+    "closing": ParagraphStyle("cl_closing", **_BASE, alignment=TA_LEFT, spaceAfter=0),
+    "sig":     ParagraphStyle("cl_sig",     **_BASE, alignment=TA_LEFT, spaceAfter=0),
 }
 
 
@@ -37,7 +38,7 @@ def _para(text: str, style: str = "body") -> Paragraph:
     from resume_builder import esc
     return Paragraph(esc(text), STYLES[style])
 
-def _spacer(h: int = 6) -> Spacer:
+def _spacer(h: int = 12) -> Spacer:
     return Spacer(1, h)
 
 
@@ -60,32 +61,35 @@ def build_cover_letter(text: str, company: str, role: str, output_path: str):
 
     story = []
 
-    # ── Header ──────────────────────────────────
-    story.append(_para(name, "name"))
-    story.append(_para(contact, "contact"))
-    story.append(_spacer(6))
-    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#888888"), spaceAfter=8))
+    # ── Sender block ────────────────────────────
+    # Two lines, not one per field — six one-line fields reads sparse and
+    # un-letter-like. Location/phone first, then the online-presence fields.
+    parts = contact.split(" | ")
+    story.append(_para(name, "sender"))
+    story.append(_para(" | ".join(parts[:2]), "sender"))
+    if len(parts) > 2:
+        story.append(_para(" | ".join(parts[2:]), "sender"))
+    story.append(_spacer())
 
     # ── Date ────────────────────────────────────
     date_str = datetime.date.today().strftime("%B %d, %Y").replace(" 0", " ")
     story.append(_para(date_str, "date"))
-    story.append(_spacer(14))
+    story.append(_spacer())
 
-    # ── To block ────────────────────────────────
+    # ── Recipient block ─────────────────────────
     story.append(_para("Hiring Manager", "to"))
     if company:
         story.append(_para(company, "to"))
-    story.append(_spacer(14))
+    story.append(_spacer())
 
-    # ── Body ────────────────────────────────────
+    # ── Body (salutation is the model's first paragraph) ──
     raw_paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
     for block in raw_paragraphs:
         story.append(_para(block.replace("\n", " ")))
 
     # ── Closing ─────────────────────────────────
-    story.append(_spacer(6))
     story.append(_para("Sincerely,", "closing"))
-    story.append(_spacer(20))
+    story.append(_spacer(28))
     story.append(_para(name, "sig"))
 
     doc.build(story)
