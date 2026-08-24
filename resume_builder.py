@@ -74,13 +74,20 @@ def set_education_dates(index: int, new_dates: str) -> None:
     """Edit one education entry's `dates` field via a surgical text
     replacement in data.json, not a full json.dump — the file is hand-
     aligned (see the skills/experience column formatting) and a full dump
-    would reflow all of it for a one-line change."""
-    old_dates = BASE_RESUME_DATA["education"][index]["dates"]
+    would reflow all of it for a one-line change.
+
+    The "old" value to search for is read fresh from disk here, not from
+    BASE_RESUME_DATA — a long-lived caller (the Streamlit app) can have a
+    stale in-memory copy if data.json was edited by another process (e.g. a
+    one-off script) since it last loaded, and matching against that stale
+    value would either fail to find anything or, worse, silently touch the
+    wrong occurrence."""
+    with open(_DATA_JSON, "r", encoding="utf-8") as f:
+        text = f.read()
+    old_dates = json.loads(text)["education"][index]["dates"]
     old_line = f'"dates": "{old_dates}"'
     new_line = f'"dates": "{new_dates}"'
 
-    with open(_DATA_JSON, "r", encoding="utf-8") as f:
-        text = f.read()
     n = text.count(old_line)
     if n != 1:
         raise RuntimeError(
