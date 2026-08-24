@@ -110,7 +110,7 @@ def esc(text) -> str:
 
 def hr():
     return HRFlowable(width="100%", thickness=0.8, color=colors.black,
-                      spaceAfter=0, spaceBefore=0)
+                      spaceAfter=1, spaceBefore=0)
 
 def spacer(h=3):
     return Spacer(1, h)
@@ -159,19 +159,19 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
 
     # ── Summary (optional, for keyword coverage) ──
     if data.get("summary"):
-        story.append(spacer(1))
+        story.append(spacer(2))
         story.append(Paragraph("Summary", S["section"]))
         story.append(hr())
         story.append(Paragraph(esc(data["summary"]), S["summary"]))
 
     # ── Education ──
-    story.append(spacer(1))
+    story.append(spacer(2))
     story.append(Paragraph("Education", S["section"]))
     story.append(hr())
 
     for i, edu in enumerate(data["education"]):
         if i > 0:
-            story.append(spacer(1))
+            story.append(spacer(2))
         # Single line, same reasoning as Work Experience below — no table for a
         # parser to transpose.
         #   [School], [Location] | [Degree] | [Dates]
@@ -185,7 +185,7 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
             story.append(Paragraph(esc(ex), S["extra"]))
 
     # ── Skills ──
-    story.append(spacer(1))
+    story.append(spacer(2))
     story.append(Paragraph("Skills", S["section"]))
     story.append(hr())
 
@@ -194,13 +194,13 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
         story.append(Paragraph(f"<b>{esc(label)}:</b> {esc(value)}", S["body"]))
 
     # ── Experience ──
-    story.append(spacer(1))
+    story.append(spacer(2))
     story.append(Paragraph("Work Experience", S["section"]))
     story.append(hr())
 
     for i, exp in enumerate(data["experience"]):
         if i > 0:
-            story.append(spacer(1))
+            story.append(spacer(2))
         # One flowing line rather than a two-row table: ATS parsers read a
         # single Paragraph in reading order with no risk of a table transposing
         # company/date or role/location.
@@ -215,13 +215,13 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
             story.append(bullet_item(b, S))
 
     # ── Projects ──
-    story.append(spacer(1))
+    story.append(spacer(2))
     story.append(Paragraph("Projects", S["section"]))
     story.append(hr())
 
     for i, proj in enumerate(data["projects"]):
         if i > 0:
-            story.append(spacer(1))
+            story.append(spacer(2))
         story.append(_project_title(proj, S))
 
         for b in proj["bullets"]:
@@ -229,13 +229,13 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
 
     # ── Open Source Contributions (optional) ──
     if data.get("open_source"):
-        story.append(spacer(1))
+        story.append(spacer(2))
         story.append(Paragraph("Open Source Contributions", S["section"]))
         story.append(hr())
 
         for i, item in enumerate(data["open_source"]):
             if i > 0:
-                story.append(spacer(1))
+                story.append(spacer(2))
             story.append(_project_title(item, S))
 
             for b in item["bullets"]:
