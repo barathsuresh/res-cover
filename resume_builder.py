@@ -133,6 +133,12 @@ def hr():
 def spacer(h=3):
     return Spacer(1, h)
 
+def section_gap():
+    # Gap before each section heading (Education/Skills/Work Experience/...).
+    # Separate from the smaller inter-entry spacer() below by design — this is
+    # the one the user asked to widen; entry-to-entry spacing stays as-is.
+    return Spacer(1, 6)
+
 def bullet_item(text, styles):
     # ASCII hyphen, not "•": some ATS extractors still misread a bullet glyph
     # as "(cid:127)" or similar depending on font/embedder, so keep the plain
@@ -178,13 +184,13 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
 
     # ── Summary (optional, for keyword coverage) ──
     if data.get("summary"):
-        story.append(spacer(2))
+        story.append(section_gap())
         story.append(Paragraph("Summary", S["section"]))
         story.append(hr())
         story.append(Paragraph(esc(data["summary"]), S["summary"]))
 
     # ── Education ──
-    story.append(spacer(2))
+    story.append(section_gap())
     story.append(Paragraph("Education", S["section"]))
     story.append(hr())
 
@@ -204,7 +210,7 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
             story.append(Paragraph(esc(ex), S["extra"]))
 
     # ── Skills ──
-    story.append(spacer(2))
+    story.append(section_gap())
     story.append(Paragraph("Skills", S["section"]))
     story.append(hr())
 
@@ -213,7 +219,7 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
         story.append(Paragraph(f"<b>{esc(label)}:</b> {esc(value)}", S["body"]))
 
     # ── Experience ──
-    story.append(spacer(2))
+    story.append(section_gap())
     story.append(Paragraph("Work Experience", S["section"]))
     story.append(hr())
 
@@ -234,7 +240,7 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
             story.append(bullet_item(b, S))
 
     # ── Projects ──
-    story.append(spacer(2))
+    story.append(section_gap())
     story.append(Paragraph("Projects", S["section"]))
     story.append(hr())
 
@@ -248,7 +254,7 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
 
     # ── Open Source Contributions (optional) ──
     if data.get("open_source"):
-        story.append(spacer(2))
+        story.append(section_gap())
         story.append(Paragraph("Open Source Contributions", S["section"]))
         story.append(hr())
 
