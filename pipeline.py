@@ -495,6 +495,17 @@ def _build_reorder_prompt(jd: str, cl_personalization: str = "") -> str:
         lines += [f"  [{j}] {s}" for j, s in enumerate(items)]
         lines.append("")
 
+    coursework_pool = BASE_RESUME_DATA["education"][0].get("coursework_pool") or []
+    if coursework_pool:
+        lines.append(
+            "RELEVANT COURSEWORK — from the pool below, pick only the courses that give this "
+            "specific JD real signal (not padding), most relevant first, however many fit "
+            "naturally on one resume line (usually 2-4 depending on course name length — do not "
+            "force a count):"
+        )
+        lines += [f'  "{c}"' for c in coursework_pool]
+        lines.append("")
+
     open_source = BASE_RESUME_DATA.get("open_source") or []
     if open_source:
         os_entry = open_source[0]
@@ -539,12 +550,13 @@ OUTPUT — return ONLY this JSON, no markdown, no explanation:
   "skill_category_order": ["<category label>", "..."],
   "skill_item_order": [[0,1,2], "..."],
   "skill_gaps": [{{"category": "<one of the base category labels above>", "skill": "<bare skill name, no tag>"}}],
+  "coursework_order": ["<course, exact string from the pool>", "..."],
   "experience_bullet_order": [[0,1,2,3], [0,1]],
   "include_open_source": true,
   "open_source_bullet_order": [0,1],
   "cover_letter_text": "Dear Hiring Manager, ... (full letter, no signature line)"
 }}
-Field notes: project_bullet_order is parallel to project_order (one permutation array per chosen project, in that order). skill_item_order is parallel to skill_category_order. experience_bullet_order is parallel to the base EXPERIENCE list order shown above (index 0 = first experience entry), each array is a selection+order of that entry's bullet indices at the required length. open_source_bullet_order is only used when include_open_source is true. skill_gaps may be an empty list — omit entries rather than force 3.""")
+Field notes: project_bullet_order is parallel to project_order (one permutation array per chosen project, in that order). skill_item_order is parallel to skill_category_order. experience_bullet_order is parallel to the base EXPERIENCE list order shown above (index 0 = first experience entry), each array is a selection+order of that entry's bullet indices at the required length. open_source_bullet_order is only used when include_open_source is true. skill_gaps may be an empty list — omit entries rather than force 3. coursework_order is exact strings copied from the coursework pool, most relevant first — omit or leave empty if none of the pool is relevant to this JD.""")
 
     return "\n".join(lines)
 
@@ -568,6 +580,7 @@ _REORDER_SCHEMA = {
                 "properties": {"category": {"type": "string"}, "skill": {"type": "string"}},
             },
         },
+        "coursework_order": {"type": "array", "items": {"type": "string"}},
         "experience_bullet_order": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}}},
         "include_open_source": {"type": "boolean"},
         "open_source_bullet_order": {"type": "array", "items": {"type": "integer"}},
@@ -701,6 +714,30 @@ def _resolve_reorder(orders: dict) -> dict:
         final_items += gap_by_cat.get(cat, [])
         new_skills.append([cat, ", ".join(final_items)])
     data["skills"] = new_skills
+
+    # Coursework: pick JD-relevant courses from the pool, most relevant first,
+    # trimmed to whatever fits on one resume line. Falls back to the base
+    # static line (untouched "extra" entry) if the model gave nothing usable —
+    # same never-fails posture as project/skill resolution above.
+    pool = BASE_RESUME_DATA["education"][0].get("coursework_pool") or []
+    if pool:
+        by_key = {_title_key(c): c for c in pool}
+        picked = []
+        for raw in orders.get("coursework_order") or []:
+            match = by_key.get(_title_key(raw))
+            if match and match not in picked:
+                picked.append(match)
+        if picked:
+            _COURSEWORK_CHAR_BUDGET = 85  # keeps the line to roughly one wrap at 10pt
+            while len(picked) > 1 and sum(len(c) for c in picked) + 2 * (len(picked) - 1) > _COURSEWORK_CHAR_BUDGET:
+                picked.pop()
+            line = "<i>Relevant Coursework:</i> " + ", ".join(picked)
+            edu0 = data["education"][0]
+            edu0["extra"] = [
+                e for e in edu0.get("extra", [])
+                if not e.startswith("<i>Relevant Coursework:</i>")
+            ]
+            edu0["extra"].append(line)
 
     base_os = BASE_RESUME_DATA.get("open_source") or []
     if base_os and orders.get("include_open_source"):

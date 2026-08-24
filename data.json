@@ -11,6 +11,15 @@
       "extra": [
         "GPA: 3.67/4.00",
         "<i>Relevant Coursework:</i> Cloud Computing(AWS), Data Processing at Scale, Artificial Intelligence, Foundations of Algorithms"
+      ],
+      "coursework_pool": [
+        "Cloud Computing(AWS)",
+        "Data Processing at Scale",
+        "Artificial Intelligence",
+        "Foundations of Algorithms",
+        "Mobile Computing(Kotlin)",
+        "Topics in NLP",
+        "Engineering Blockchain Applications"
       ]
     },
     {
