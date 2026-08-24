@@ -40,10 +40,8 @@ if os.path.exists(_CONTACT_JSON):
 # ─────────────────────────────────────────────
 
 W, H = letter
-# 0.5in on every side — the "narrow margins" figure recommended for ATS-parsed
-# resumes. Tighter than this risks clipping in print and in some parsers.
-LM = RM = 0.5 * inch
-TM = BM = 0.5 * inch
+LM = RM = 0.12 * inch
+TM = BM = 0.15 * inch
 
 
 # ─────────────────────────────────────────────
