@@ -188,6 +188,18 @@ def _fill_ratio(pdf_path: str) -> float:
 _BUDGET_SLACK = 1.05
 _PROJECT_PICK_COUNT = 3
 
+# Floor on how many skill categories the model may drop as irrelevant to a
+# JD (of 7 currently in data.json) — never lets the Skills section thin out
+# past this, even if it thinks fewer are relevant.
+_SKILL_CATEGORY_MIN_KEEP = 4
+
+# Fill-ratio floor and leading ceiling for the post-squeeze expand step: below
+# this fraction of the page, widen line spacing (never past _MAX_LEADING, and
+# only while it stays one page) instead of leaving the shortfall as blank
+# space at the bottom.
+_MIN_FILL_RATIO = 0.90
+_MAX_LEADING = 12.5
+
 # Most bullets any one experience entry may render. The model picks which ones,
 # by JD relevance — TATA full-time has 5 candidates and ships the best 4. Entries
 # with fewer base bullets than this keep all of them.
@@ -486,8 +498,12 @@ def _build_reorder_prompt(jd: str, cl_personalization: str = "") -> str:
         lines.append("")
 
     lines.append(
-        "SKILLS — reorder category rows AND items within each category by JD relevance "
-        "(same categories/items, no additions, no removals):"
+        f"SKILLS — reorder category rows AND items within each category by JD relevance "
+        "(same items within a kept category, no additions, no removals of items). You may also "
+        f"drop a category ENTIRELY if this JD gives it no real relevance — omit it from "
+        f"skill_category_order rather than reordering it to last. Keep at least "
+        f"{_SKILL_CATEGORY_MIN_KEEP} of the {len(BASE_RESUME_DATA['skills'])} categories; if fewer "
+        "than that are genuinely relevant, keep the rest anyway rather than thinning the resume out."
     )
     for cat, csv in BASE_RESUME_DATA["skills"]:
         items = [s.strip() for s in csv.split(",")]
@@ -556,7 +572,7 @@ OUTPUT — return ONLY this JSON, no markdown, no explanation:
   "open_source_bullet_order": [0,1],
   "cover_letter_text": "Dear Hiring Manager, ... (full letter, no signature line)"
 }}
-Field notes: project_bullet_order is parallel to project_order (one permutation array per chosen project, in that order). skill_item_order is parallel to skill_category_order. experience_bullet_order is parallel to the base EXPERIENCE list order shown above (index 0 = first experience entry), each array is a selection+order of that entry's bullet indices at the required length. open_source_bullet_order is only used when include_open_source is true. skill_gaps may be an empty list — omit entries rather than force 3. coursework_order is exact strings copied from the coursework pool, most relevant first — omit or leave empty if none of the pool is relevant to this JD.""")
+Field notes: project_bullet_order is parallel to project_order (one permutation array per chosen project, in that order). skill_item_order is parallel to skill_category_order — omit a category's entry entirely if you dropped that category, don't leave a placeholder. experience_bullet_order is parallel to the base EXPERIENCE list order shown above (index 0 = first experience entry), each array is a selection+order of that entry's bullet indices at the required length. open_source_bullet_order is only used when include_open_source is true. skill_gaps may be an empty list — omit entries rather than force 3. coursework_order is exact strings copied from the coursework pool, most relevant first — omit or leave empty if none of the pool is relevant to this JD.""")
 
     return "\n".join(lines)
 
@@ -678,12 +694,25 @@ def _resolve_reorder(orders: dict) -> dict:
     data["projects"] = new_projects
 
     base_skills = {cat: [s.strip() for s in csv.split(",")] for cat, csv in BASE_RESUME_DATA["skills"]}
-    cat_order = [c for c in (orders.get("skill_category_order") or []) if c in base_skills]
+    raw_cat_order = [c for c in (orders.get("skill_category_order") or []) if c in base_skills]
+    seen_cats = set()
+    raw_cat_order = [c for c in raw_cat_order if not (c in seen_cats or seen_cats.add(c))]
+    # skill_item_order is indexed by position in the MODEL's own category list
+    # (that's what the prompt tells it — "parallel to skill_category_order"),
+    # not by the category's position in base data. A category the model
+    # dropped correctly has no entry here and falls back to base item order.
+    cat_index = {c: i for i, c in enumerate(raw_cat_order)}
+
+    # A dropped category is intentional (the model omitted it as irrelevant to
+    # this JD) — only pad back from base order if that drops the section below
+    # the floor, and only enough to reach it, not every missing category.
+    cat_order = list(raw_cat_order)
     for cat, _ in BASE_RESUME_DATA["skills"]:
+        if len(cat_order) >= _SKILL_CATEGORY_MIN_KEEP:
+            break
         if cat not in cat_order:
             cat_order.append(cat)
     item_orders = orders.get("skill_item_order") or []
-    cat_index = {c: i for i, (c, _) in enumerate(BASE_RESUME_DATA["skills"])}
 
     # Honest gap-fill: JD-required skills genuinely absent from base data render
     # render as plain skill entries, indistinguishable from base skills.
@@ -707,8 +736,8 @@ def _resolve_reorder(orders: dict) -> dict:
     new_skills = []
     for cat in cat_order:
         items = base_skills[cat]
-        src_i = cat_index[cat]
-        order_i = item_orders[src_i] if src_i < len(item_orders) else None
+        src_i = cat_index.get(cat)
+        order_i = item_orders[src_i] if src_i is not None and src_i < len(item_orders) else None
         permuted = _permute(items, order_i)
         final_items = list(permuted if permuted is not None else items)
         final_items += gap_by_cat.get(cat, [])
@@ -1041,8 +1070,26 @@ def _process_job(job_id: int, job_link: str, jd: str, company: str, role: str, c
             "Manual review needed."
         )
 
+    # Step 5b: fill enforcement — the mirror of the squeeze above. Dropping a
+    # skill category or landing on a lighter 3-project combo can leave real
+    # blank space at the bottom instead of just less-than-maximal fill; widen
+    # leading line-by-line (bounded, and reverting the moment it would push
+    # to a 2nd page) so the page reads as intentionally spaced, not sparse.
+    def _expand_leading(current: float) -> float:
+        while _fill_ratio(resume_path) < _MIN_FILL_RATIO and current < _MAX_LEADING:
+            candidate = round(current + 0.25, 2)
+            build_resume(resume_data, resume_path, leading=candidate)
+            if _page_count(resume_path) > 1:
+                build_resume(resume_data, resume_path, leading=current)
+                break
+            print(f"  [job {job_id}] Expanding leading to {candidate} (fill was low)")
+            current = candidate
+        return current
+
+    leading = _expand_leading(leading)
+
     fill = _fill_ratio(resume_path)
-    print(f"  [job {job_id}] Page fill: {fill:.0%} — bullets are verbatim base text, not expandable")
+    print(f"  [job {job_id}] Page fill: {fill:.0%} at leading {leading} — bullets are verbatim base text, not expandable")
 
     result = {"resume_data": resume_data, "cover_letter_text": orders["cover_letter_text"]}
 
