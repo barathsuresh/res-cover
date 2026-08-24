@@ -17,6 +17,24 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, HRFlowable
 )
 from reportlab.lib import colors
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+# ─────────────────────────────────────────────
+#  FONT — real Arial, embedded, not the Helvetica core-font substitute.
+#  registerFontFamily lets inline <b>/<i> markup (used in project/entry lines)
+#  resolve to the right variant automatically, same as the built-in families do.
+# ─────────────────────────────────────────────
+
+_ARIAL_DIR = "/System/Library/Fonts/Supplemental"
+pdfmetrics.registerFont(TTFont("Arial", f"{_ARIAL_DIR}/Arial.ttf"))
+pdfmetrics.registerFont(TTFont("Arial-Bold", f"{_ARIAL_DIR}/Arial Bold.ttf"))
+pdfmetrics.registerFont(TTFont("Arial-Italic", f"{_ARIAL_DIR}/Arial Italic.ttf"))
+pdfmetrics.registerFont(TTFont("Arial-BoldItalic", f"{_ARIAL_DIR}/Arial Bold Italic.ttf"))
+pdfmetrics.registerFontFamily(
+    "Arial", normal="Arial", bold="Arial-Bold",
+    italic="Arial-Italic", boldItalic="Arial-BoldItalic",
+)
 
 # ─────────────────────────────────────────────
 #  BASE RESUME DATA  ← loaded from data.json
@@ -51,26 +69,26 @@ TM = BM = 0.15 * inch
 DEFAULT_LEADING = 11.25
 
 def build_styles(leading: float = DEFAULT_LEADING):
-    base = dict(fontName="Helvetica", fontSize=10, leading=leading)
-    bold = dict(fontName="Helvetica-Bold",  fontSize=10, leading=leading)
+    base = dict(fontName="Arial", fontSize=10, leading=leading)
+    bold = dict(fontName="Arial-Bold",  fontSize=10, leading=leading)
 
     return {
         "name": ParagraphStyle("name",
-            fontName="Helvetica-Bold", fontSize=14, leading=16.5,
+            fontName="Arial-Bold", fontSize=14, leading=16.5,
             alignment=TA_CENTER, spaceAfter=1),
 
         "contact": ParagraphStyle("contact",
-            fontName="Helvetica", fontSize=8.8, leading=10.5,
+            fontName="Arial", fontSize=8.8, leading=10.5,
             alignment=TA_CENTER, spaceAfter=1),
 
         "section": ParagraphStyle("section",
-            fontName="Helvetica-Bold", fontSize=10, leading=12,
+            fontName="Arial-Bold", fontSize=10, leading=12,
             spaceBefore=1, spaceAfter=0, textTransform="uppercase"),
 
         "org": ParagraphStyle("org", **bold, spaceBefore=0, spaceAfter=0),
 
         "role": ParagraphStyle("role",
-            fontName="Helvetica-Oblique", fontSize=9.8, leading=12.0),
+            fontName="Arial-Italic", fontSize=9.8, leading=12.0),
 
         "body": ParagraphStyle("body", **base),
 
@@ -116,8 +134,9 @@ def spacer(h=3):
     return Spacer(1, h)
 
 def bullet_item(text, styles):
-    # ASCII hyphen, not "•": the standard-14 fonts carry no ToUnicode map
-    # for the bullet glyph, so ATS text extraction reads it as "(cid:127)".
+    # ASCII hyphen, not "•": some ATS extractors still misread a bullet glyph
+    # as "(cid:127)" or similar depending on font/embedder, so keep the plain
+    # dash — costs nothing and removes the risk entirely.
     return Paragraph(f"-&nbsp;&nbsp;{esc(text)}", styles["bullet"])
 
 def _project_title(entry, styles):
