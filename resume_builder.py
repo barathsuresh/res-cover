@@ -12,9 +12,9 @@ import re
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    SimpleDocTemplate, Paragraph, Spacer, HRFlowable
 )
 from reportlab.lib import colors
 
@@ -40,8 +40,10 @@ if os.path.exists(_CONTACT_JSON):
 # ─────────────────────────────────────────────
 
 W, H = letter
-LM = RM = 0.12 * inch
-TM = BM = 0.15 * inch
+# 0.5in on every side — the "narrow margins" figure recommended for ATS-parsed
+# resumes. Tighter than this risks clipping in print and in some parsers.
+LM = RM = 0.5 * inch
+TM = BM = 0.5 * inch
 
 
 # ─────────────────────────────────────────────
@@ -51,26 +53,26 @@ TM = BM = 0.15 * inch
 DEFAULT_LEADING = 11.25
 
 def build_styles(leading: float = DEFAULT_LEADING):
-    base = dict(fontName="Times-Roman", fontSize=10, leading=leading)
-    bold = dict(fontName="Times-Bold",  fontSize=10, leading=leading)
+    base = dict(fontName="Helvetica", fontSize=10, leading=leading)
+    bold = dict(fontName="Helvetica-Bold",  fontSize=10, leading=leading)
 
     return {
         "name": ParagraphStyle("name",
-            fontName="Times-Bold", fontSize=16, leading=19,
+            fontName="Helvetica-Bold", fontSize=14, leading=16.5,
             alignment=TA_CENTER, spaceAfter=1),
 
         "contact": ParagraphStyle("contact",
-            fontName="Times-Roman", fontSize=8.8, leading=10.5,
+            fontName="Helvetica", fontSize=8.8, leading=10.5,
             alignment=TA_CENTER, spaceAfter=1),
 
         "section": ParagraphStyle("section",
-            fontName="Times-Bold", fontSize=10, leading=12,
+            fontName="Helvetica-Bold", fontSize=10, leading=12,
             spaceBefore=1, spaceAfter=0, textTransform="uppercase"),
 
         "org": ParagraphStyle("org", **bold, spaceBefore=0, spaceAfter=0),
 
         "role": ParagraphStyle("role",
-            fontName="Times-Italic", fontSize=9.8, leading=12.0),
+            fontName="Helvetica-Oblique", fontSize=9.8, leading=12.0),
 
         "body": ParagraphStyle("body", **base),
 
@@ -110,30 +112,13 @@ def esc(text) -> str:
 
 def hr():
     return HRFlowable(width="100%", thickness=0.8, color=colors.black,
-                      spaceAfter=1, spaceBefore=0)
+                      spaceAfter=0, spaceBefore=0)
 
 def spacer(h=3):
     return Spacer(1, h)
 
-def two_col(left_para, right_text, styles):
-    right = Paragraph(right_text, ParagraphStyle("r",
-        fontName=styles["body"].fontName,
-        fontSize=styles["body"].fontSize,
-        leading=styles["body"].leading,
-        alignment=TA_RIGHT,
-    ))
-    t = Table([[left_para, right]], colWidths=["75%", "25%"])
-    t.setStyle(TableStyle([
-        ("VALIGN",       (0, 0), (-1, -1), "BOTTOM"),
-        ("LEFTPADDING",  (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING",   (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING",(0, 0), (-1, -1), 0),
-    ]))
-    return t
-
 def bullet_item(text, styles):
-    # ASCII hyphen, not "•": the standard-14 Times fonts carry no ToUnicode map
+    # ASCII hyphen, not "•": the standard-14 fonts carry no ToUnicode map
     # for the bullet glyph, so ATS text extraction reads it as "(cid:127)".
     return Paragraph(f"-&nbsp;&nbsp;{esc(text)}", styles["bullet"])
 
@@ -176,31 +161,33 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
 
     # ── Summary (optional, for keyword coverage) ──
     if data.get("summary"):
-        story.append(spacer(2))
+        story.append(spacer(1))
         story.append(Paragraph("Summary", S["section"]))
         story.append(hr())
         story.append(Paragraph(esc(data["summary"]), S["summary"]))
 
     # ── Education ──
-    story.append(spacer(2))
+    story.append(spacer(1))
     story.append(Paragraph("Education", S["section"]))
     story.append(hr())
 
     for i, edu in enumerate(data["education"]):
         if i > 0:
-            story.append(spacer(2))
-        org_p = Paragraph(
-            f"<b>{esc(edu['school'])}</b> – {esc(edu['location'])}", S["body"])
-        story.append(two_col(org_p, "", S))
-
-        deg_p = Paragraph(f"<i>{esc(edu['degree'])}</i>", S["body"])
-        story.append(two_col(deg_p, esc(edu["dates"]), S))
+            story.append(spacer(1))
+        # Single line, same reasoning as Work Experience below — no table for a
+        # parser to transpose.
+        #   [School], [Location] | [Degree] | [Dates]
+        story.append(Paragraph(
+            f"<b>{esc(edu['school'])}</b>, {esc(edu['location'])} | "
+            f"<i>{esc(edu['degree'])}</i> | {esc(edu['dates'])}",
+            S["body"],
+        ))
 
         for ex in edu.get("extra", []):
             story.append(Paragraph(esc(ex), S["extra"]))
 
     # ── Skills ──
-    story.append(spacer(2))
+    story.append(spacer(1))
     story.append(Paragraph("Skills", S["section"]))
     story.append(hr())
 
@@ -209,30 +196,34 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
         story.append(Paragraph(f"<b>{esc(label)}:</b> {esc(value)}", S["body"]))
 
     # ── Experience ──
-    story.append(spacer(2))
-    story.append(Paragraph("Professional Experience", S["section"]))
+    story.append(spacer(1))
+    story.append(Paragraph("Work Experience", S["section"]))
     story.append(hr())
 
     for i, exp in enumerate(data["experience"]):
         if i > 0:
-            story.append(spacer(2))
-        co_p = Paragraph(f"<b>{esc(exp['company'])}</b>", S["body"])
-        story.append(two_col(co_p, esc(exp["dates"]), S))
-
-        role_p = Paragraph(f"<i>{esc(exp['role'])}</i>", S["body"])
-        story.append(two_col(role_p, esc(exp["location"]), S))
+            story.append(spacer(1))
+        # One flowing line rather than a two-row table: ATS parsers read a
+        # single Paragraph in reading order with no risk of a table transposing
+        # company/date or role/location.
+        #   [Company], [Location] | [Title] | [Dates]
+        story.append(Paragraph(
+            f"<b>{esc(exp['company'])}</b>, {esc(exp['location'])} | "
+            f"<i>{esc(exp['role'])}</i> | {esc(exp['dates'])}",
+            S["body"],
+        ))
 
         for b in exp["bullets"]:
             story.append(bullet_item(b, S))
 
     # ── Projects ──
-    story.append(spacer(2))
-    story.append(Paragraph("Project Experience", S["section"]))
+    story.append(spacer(1))
+    story.append(Paragraph("Projects", S["section"]))
     story.append(hr())
 
     for i, proj in enumerate(data["projects"]):
         if i > 0:
-            story.append(spacer(2))
+            story.append(spacer(1))
         story.append(_project_title(proj, S))
 
         for b in proj["bullets"]:
@@ -240,13 +231,13 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
 
     # ── Open Source Contributions (optional) ──
     if data.get("open_source"):
-        story.append(spacer(2))
+        story.append(spacer(1))
         story.append(Paragraph("Open Source Contributions", S["section"]))
         story.append(hr())
 
         for i, item in enumerate(data["open_source"]):
             if i > 0:
-                story.append(spacer(2))
+                story.append(spacer(1))
             story.append(_project_title(item, S))
 
             for b in item["bullets"]:

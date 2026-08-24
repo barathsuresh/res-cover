@@ -23,11 +23,11 @@
   ],
   "skills": [
     ["Languages",               "Java, Python, Go, TypeScript, JavaScript, C/C++"],
-    ["Backend & Microservices", "Spring Boot, Spring Security, Node.js, FastAPI, REST APIs, Microservices, Distributed Systems, System Design, JWT, OAuth 2.0"],
+    ["Backend & Microservices", "Spring Boot, Spring Security, Node.js, FastAPI, REST APIs, Microservices, Distributed Systems, System Design, JWT (JSON Web Tokens), OAuth 2.0"],
     ["Frontend",                "React, HTML/CSS, Vanilla.js, Vue.js"],
-    ["AI/ML",                   "NVIDIA NIM, Retrieval-Augmented Generation, Vector Search (pgvector), LoRA/QLoRA Finetuning, PEFT, MONAI, LLM Evaluation, Prompt Engineering"],
+    ["AI/ML",                   "NVIDIA NIM, Retrieval-Augmented Generation (RAG), Vector Search (pgvector), LoRA/QLoRA Finetuning, PEFT (Parameter-Efficient Fine-Tuning), MONAI, Large Language Model (LLM) Evaluation, Prompt Engineering"],
     ["Data & Messaging",        "Kafka, RabbitMQ, Redis, MongoDB, PostgreSQL, WebSocket, MQTT"],
-    ["DevOps & Cloud",          "Terraform, Kubernetes, Docker, AWS, GCP, CI/CD, Linux, Prometheus, Grafana, Git"]
+    ["DevOps & Cloud",          "Terraform, Kubernetes (K8s), Docker, AWS (Amazon Web Services), GCP (Google Cloud Platform), CI/CD (Continuous Integration/Continuous Delivery), Linux, Prometheus, Grafana, Git"]
   ],
   "experience": [
     {

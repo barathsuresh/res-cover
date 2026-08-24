@@ -18,13 +18,13 @@ from reportlab.lib import colors
 LM = RM = 0.75 * inch
 TM = BM = 0.65 * inch
 
-_BASE  = dict(fontName="Times-Roman", fontSize=10.5, leading=15)
-_BOLD  = dict(fontName="Times-Bold",  fontSize=10.5, leading=15)
-_SMALL = dict(fontName="Times-Roman", fontSize=9.5,  leading=13)
+_BASE  = dict(fontName="Helvetica", fontSize=10.5, leading=15)
+_BOLD  = dict(fontName="Helvetica-Bold",  fontSize=10.5, leading=15)
+_SMALL = dict(fontName="Helvetica", fontSize=9.5,  leading=13)
 
 STYLES = {
-    "name":    ParagraphStyle("cl_name",    fontName="Times-Bold",   fontSize=16, leading=20, alignment=TA_LEFT, spaceAfter=2),
-    "contact": ParagraphStyle("cl_contact", fontName="Times-Roman",  fontSize=9,  leading=12, alignment=TA_LEFT, spaceAfter=0, textColor=colors.HexColor("#444444")),
+    "name":    ParagraphStyle("cl_name",    fontName="Helvetica-Bold",   fontSize=16, leading=20, alignment=TA_LEFT, spaceAfter=2),
+    "contact": ParagraphStyle("cl_contact", fontName="Helvetica",  fontSize=9,  leading=12, alignment=TA_LEFT, spaceAfter=0, textColor=colors.HexColor("#444444")),
     "date":    ParagraphStyle("cl_date",    **_BASE, spaceAfter=0),
     "to":      ParagraphStyle("cl_to",      **_BASE, spaceAfter=0),
     "body":    ParagraphStyle("cl_body",    **_BASE, spaceAfter=10),
