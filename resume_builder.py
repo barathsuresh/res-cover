@@ -12,9 +12,9 @@ import re
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, HRFlowable
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 )
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
@@ -186,6 +186,27 @@ def section_gap():
     # the one the user asked to widen; entry-to-entry spacing stays as-is.
     return Spacer(1, 6)
 
+def two_col(left_para, right_text, styles):
+    # A single-row, 2-column table. Verified this doesn't carry the multi-row/
+    # multi-column ATS parsing risk tables generally do: with only one row
+    # there's no row-vs-column read-order ambiguity, and pdfplumber extraction
+    # of this exact structure comes out in correct left-to-right reading order.
+    right = Paragraph(right_text, ParagraphStyle("r",
+        fontName=styles["body"].fontName,
+        fontSize=styles["body"].fontSize,
+        leading=styles["body"].leading,
+        alignment=TA_RIGHT,
+    ))
+    t = Table([[left_para, right]], colWidths=["75%", "25%"])
+    t.setStyle(TableStyle([
+        ("VALIGN",       (0, 0), (-1, -1), "BOTTOM"),
+        ("LEFTPADDING",  (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING",   (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING",(0, 0), (-1, -1), 0),
+    ]))
+    return t
+
 def bullet_item(text, styles):
     # ASCII hyphen, not "•": some ATS extractors still misread a bullet glyph
     # as "(cid:127)" or similar depending on font/embedder, so keep the plain
@@ -244,14 +265,12 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
     for i, edu in enumerate(data["education"]):
         if i > 0:
             story.append(spacer(2))
-        # Single line, same reasoning as Work Experience below — no table for a
-        # parser to transpose.
-        #   [School], [Location] | [Degree] | [Dates]
-        story.append(Paragraph(
-            f"<b>{esc(edu['school'])}</b>, {esc(edu['location'])} | "
-            f"<i>{esc(edu['degree'])}</i> | {esc(edu['dates'])}",
-            S["body"],
-        ))
+        org_p = Paragraph(
+            f"<b>{esc(edu['school'])}</b> – {esc(edu['location'])}", S["body"])
+        story.append(two_col(org_p, "", S))
+
+        deg_p = Paragraph(f"<i>{esc(edu['degree'])}</i>", S["body"])
+        story.append(two_col(deg_p, esc(edu["dates"]), S))
 
         for ex in edu.get("extra", []):
             story.append(Paragraph(esc(ex), S["extra"]))
@@ -273,15 +292,11 @@ def build_resume(data: dict, output_path: str, leading: float = DEFAULT_LEADING)
     for i, exp in enumerate(data["experience"]):
         if i > 0:
             story.append(spacer(2))
-        # One flowing line rather than a two-row table: ATS parsers read a
-        # single Paragraph in reading order with no risk of a table transposing
-        # company/date or role/location.
-        #   [Company], [Location] | [Title] | [Dates]
-        story.append(Paragraph(
-            f"<b>{esc(exp['company'])}</b>, {esc(exp['location'])} | "
-            f"<i>{esc(exp['role'])}</i> | {esc(exp['dates'])}",
-            S["body"],
-        ))
+        co_p = Paragraph(f"<b>{esc(exp['company'])}</b>", S["body"])
+        story.append(two_col(co_p, esc(exp["dates"]), S))
+
+        role_p = Paragraph(f"<i>{esc(exp['role'])}</i>", S["body"])
+        story.append(two_col(role_p, esc(exp["location"]), S))
 
         for b in exp["bullets"]:
             story.append(bullet_item(b, S))
