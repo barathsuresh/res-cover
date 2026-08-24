@@ -53,6 +53,46 @@ if os.path.exists(_CONTACT_JSON):
     with open(_CONTACT_JSON, "r", encoding="utf-8") as _f:
         BASE_RESUME_DATA["contact"] = json.load(_f)["contact"]
 
+
+def reload_base_data() -> None:
+    """Re-read data.json/contact.json into the existing BASE_RESUME_DATA dict,
+    in place. pipeline.py and app.py each bind their own name to this same
+    dict object at import time, so mutating it in place (clear + update)
+    makes an edit visible everywhere without needing every module reloaded —
+    rebinding the module-level name here would not update those other
+    references."""
+    with open(_DATA_JSON, "r", encoding="utf-8") as f:
+        fresh = json.load(f)
+    if os.path.exists(_CONTACT_JSON):
+        with open(_CONTACT_JSON, "r", encoding="utf-8") as f:
+            fresh["contact"] = json.load(f)["contact"]
+    BASE_RESUME_DATA.clear()
+    BASE_RESUME_DATA.update(fresh)
+
+
+def set_education_dates(index: int, new_dates: str) -> None:
+    """Edit one education entry's `dates` field via a surgical text
+    replacement in data.json, not a full json.dump — the file is hand-
+    aligned (see the skills/experience column formatting) and a full dump
+    would reflow all of it for a one-line change."""
+    old_dates = BASE_RESUME_DATA["education"][index]["dates"]
+    old_line = f'"dates": "{old_dates}"'
+    new_line = f'"dates": "{new_dates}"'
+
+    with open(_DATA_JSON, "r", encoding="utf-8") as f:
+        text = f.read()
+    n = text.count(old_line)
+    if n != 1:
+        raise RuntimeError(
+            f"Expected exactly one match for {old_line!r} in data.json, found {n} — "
+            "refusing to guess which one to edit."
+        )
+    text = text.replace(old_line, new_line, 1)
+    with open(_DATA_JSON, "w", encoding="utf-8") as f:
+        f.write(text)
+
+    reload_base_data()
+
 # ─────────────────────────────────────────────
 #  LAYOUT CONSTANTS
 # ─────────────────────────────────────────────

@@ -610,6 +610,36 @@ with st.sidebar:
 
     st.divider()
 
+    # ── Education ──────────────────────────────
+    with st.expander("🎓 Education", expanded=False):
+        import resume_builder
+
+        _MONTHS = ["January", "February", "March", "April", "May", "June",
+                   "July", "August", "September", "October", "November", "December"]
+
+        edu = resume_builder.BASE_RESUME_DATA["education"][0]
+        st.caption(edu["school"])
+        start_str, end_str = [s.strip() for s in edu["dates"].split("–")]
+        end_month, end_year = end_str.rsplit(" ", 1)
+
+        c1, c2 = st.columns(2)
+        new_month = c1.selectbox(
+            "Graduation month", _MONTHS,
+            index=_MONTHS.index(end_month) if end_month in _MONTHS else 0,
+            key="grad_month",
+        )
+        new_year = c2.number_input(
+            "Graduation year", value=int(end_year), step=1, key="grad_year",
+        )
+
+        new_dates = f"{start_str} – {new_month} {new_year}"
+        if new_dates != edu["dates"]:
+            resume_builder.set_education_dates(0, new_dates)
+            st.caption("Saved.")
+        st.caption(f"Currently: `{edu['dates']}`")
+
+    st.divider()
+
     # ── LLM provider ──────────────────────────
     with st.expander("🤖 LLM Provider", expanded=False):
         provider = st.radio(
