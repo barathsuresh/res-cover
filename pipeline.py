@@ -885,15 +885,27 @@ COVER LETTER STYLE SAMPLE (match this voice and confidence level — write entir
 {_CL_STYLE_SAMPLE}
 
 TAILORING RULES:
-1. Resume bullets: think like a senior recruiter who sees 300 resumes a day.
-   Write every bullet in XYZ format — "Accomplished [X] as measured by [Y] by doing [Z]".
-   - X = the outcome or impact (what improved, what was solved, what was shipped)
-   - Y = the concrete metric — use exact numbers where present; conservative rounding/extrapolation allowed
-     (e.g. "~50%" → "50%+", "100ms to 7ms" → "14x latency reduction")
-   - Z = the action taken (technology, method, design decision)
+1. Resume bullets: think like a senior recruiter who sees 300 resumes a day, skimming for 6 seconds.
+   Impact first, always — lead with the outcome, not the setup. But do NOT force every bullet into the
+   same "Accomplished X as measured by Y by doing Z" sentence skeleton — a resume where every line reads
+   identically is a tell that it was templated, and it wastes the skim: the eye stops parsing repeated
+   structure after the second bullet. Vary sentence shape bullet to bullet within an entry (lead with the
+   number, lead with the verb, lead with the technology) the way a person who actually did different kinds
+   of work would naturally write different kinds of sentences.
+   - Metrics: use exact numbers where the base data actually states them. Light rounding is fine
+     ("~50%" → "50%+"). Do NOT manufacture decimal-precision numbers that aren't in the base data
+     (no inventing things like "11.2x" or "182ms mean latency" from vague inputs) — a number that precise
+     on an unaudited personal project is exactly what an interviewer will cross-examine, and if it can't be
+     defended it undermines the whole resume's credibility. When the base data is vague, state the win
+     plainly and skip the fake-precise number rather than invent one.
    - Lead with the result. NEVER start with "Worked on", "Assisted", "Helped", "Participated in".
      Use strong verbs: Engineered, Eliminated, Accelerated, Reduced, Scaled, Shipped, Optimized, Designed.
    - Every bullet must pass the "so what?" test — if removing the metric makes it meaningless, rewrite it.
+   - Bold (<b></b>) at most ONE phrase per bullet — the single strongest quantified outcome, if the bullet
+     has one. Apply this consistently: every bullet with a headline number gets it bolded, not just some:
+     a resume that bolds metrics in half its bullets and not the rest reads sloppy on a 6-second skim, since
+     the recruiter's eye is trained to jump straight to bold text and a miss there is a miss on that bullet
+     entirely. Bullets with no standout number stay unbolded — never bold a whole sentence or a verb alone.
    - AGGRESSIVE REWRITE: treat base bullets as raw facts (metrics, technologies, outcomes) — NOT as templates to copy.
      Reconstruct every bullet from scratch using the JD's exact language, terminology, and framing.
      If JD says "distributed systems", your bullet says "distributed systems". If JD says "observability platform", yours says "observability platform".

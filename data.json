@@ -32,11 +32,11 @@
   ],
   "skills": [
     ["Languages",               "Java, Python, Go, TypeScript, JavaScript, C/C++"],
-    ["Backend & Microservices", "Spring Boot, Spring Security, Node.js, FastAPI, REST APIs, Microservices, Distributed Systems, System Design, JWT (JSON Web Tokens), OAuth 2.0"],
+    ["Backend & Microservices", "Spring Boot, Spring Security, Node.js, FastAPI, REST APIs, Microservices, Distributed Systems, System Design, JWT, OAuth 2.0"],
     ["Frontend",                "React, HTML/CSS, Vanilla.js, Vue.js"],
-    ["AI/ML",                   "NVIDIA NIM, Retrieval-Augmented Generation (RAG), Vector Search (pgvector), LoRA/QLoRA Finetuning, PEFT (Parameter-Efficient Fine-Tuning), MONAI, Large Language Model (LLM) Evaluation, Prompt Engineering"],
+    ["AI/ML",                   "NVIDIA NIM, RAG, Vector Search (pgvector), LoRA/QLoRA Finetuning, PEFT, MONAI, PyTorch, Federated Learning, LLM Evaluation, Prompt Engineering"],
     ["Data & Messaging",        "Kafka, RabbitMQ, Redis, MongoDB, PostgreSQL, WebSocket, MQTT"],
-    ["DevOps & Cloud",          "Terraform, Kubernetes (K8s), Docker, AWS (Amazon Web Services), GCP (Google Cloud Platform), CI/CD (Continuous Integration/Continuous Delivery), Linux, Prometheus, Grafana, Git"],
+    ["DevOps & Cloud",          "Terraform, Kubernetes (K8s), Docker, AWS, GCP, CI/CD, Linux, Prometheus, Grafana, Git"],
     ["Mobile & Android",        "Flutter, Dart, Android Studio, Firebase (Auth, Firestore), AES Encryption, Google Sign-In"]
   ],
   "experience": [
@@ -49,7 +49,7 @@
         "<b>Cut incident detection time from 2 hours to 40 minutes</b>, by building an AI-driven log anomaly detection service with Spring AI and Gemma 3 across 6 microservices",
         "Streamlined Excel ingestion by redesigning it from synchronous to async processing via RabbitMQ, <b>reducing processing time by 70%</b> on 20,000-row files",
         "<b>Reduced authorization latency from 100ms to 7ms</b> across 50+ endpoints, by embedding Azure AD role claims into JWT at authentication time",
-        "Eliminated roughly half of server errors by adding a centralized global exception handler in Spring Boot",
+        "<b>Eliminated roughly half of server errors</b> by adding a centralized global exception handler in Spring Boot",
         "Containerized a 6-service stack with Docker Compose, adding centralized log aggregation and real-time monitoring via Prometheus and Grafana"
       ]
     },
@@ -99,7 +99,7 @@
         "<b>Cut marginal cost to about a cent per client-hour</b>, by driving Lambda, Kinesis, and DynamoDB usage off WebSocket connection count",
         "<b>Slashed first-data latency from a worst-case 60s to roughly 4-6 seconds</b>, by triggering an immediate async poller invocation on first connect",
         "Partitioned Kinesis by aircraft ID to guarantee per-aircraft ordering, preventing out-of-order writes from broadcasting reversed movement",
-        "<b>Eliminated static AWS credentials</b> from CI/CD, by authenticating GitHub Actions through OIDC with a scoped IAM trust policy",
+        "Authenticated GitHub Actions through OIDC with a scoped IAM trust policy, <b>eliminating static AWS credentials</b> from CI/CD",
         "Hardened the Kinesis-to-Lambda link with bisect-on-error batching and an SQS dead-letter queue"
       ]
     },
@@ -122,8 +122,8 @@
       "bullets": [
         "<b>Boosted throughput 11.2x</b> (9.8 to 109.5 req/sec) across 20K requests with zero errors and 182ms mean latency, by tuning Cloud Run CPU, memory, concurrency, and autoscaling, provisioned via Terraform",
         "Built and deployed a React + TypeScript dashboard on GitHub Pages for account, rule, and analytics management",
-        "Implemented atomic Redis Lua scripts across three rate limiting algorithms (fixed window, token bucket, sliding window) to eliminate race conditions from concurrent read-then-write checks",
-        "Designed passwordless authentication using one-time BIP39 passphrases, separate HMAC-SHA256 lookup and Argon2 verification hashes, and SHA-256-hashed IP storage to eliminate plaintext credential exposure"
+        "Eliminated race conditions from concurrent read-then-write checks with atomic Redis Lua scripts across three rate limiting algorithms (fixed window, token bucket, sliding window)",
+        "Eliminated plaintext credential exposure with passwordless authentication using one-time BIP39 passphrases, separate HMAC-SHA256 lookup and Argon2 verification hashes, and SHA-256-hashed IP storage"
       ]
     },
     {
@@ -157,6 +157,18 @@
         "<b>Encrypted every message client-side with AES</b> before it left the device, so Firebase's backend never stored or transmitted plaintext content",
         "Delivered real-time message sync across devices on Firebase Firestore listeners instead of polling",
         "Shipped from a single Flutter codebase to Android, iOS, and desktop/web targets rather than maintaining separate native implementations"
+      ]
+    },
+    {
+      "title":    "CLOUDVISION – Elastic Face Recognition & Federated Learning Platform",
+      "link":     "Coursework",
+      "link_url": "",
+      "tech":     "AWS (EC2, S3, SQS, DynamoDB, Lambda, Auto Scaling, IoT Greengrass), Python, PyTorch, MQTT",
+      "bullets": [
+        "Built an auto-scaling face recognition service on AWS, decoupling the Python web tier from a PyTorch inference tier via SQS so inference scales independently of traffic, with S3 for images and DynamoDB for predictions",
+        "Extended the platform into a Federated Learning system training a LeNet-5 CNN to <b>93% final-round accuracy</b> across 10 distributed EC2 workers over 5 rounds, using an S3-triggered Lambda aggregator for weighted-average model aggregation without centralizing client data",
+        "Replaced polling with an event-driven S3 to Lambda pipeline to auto-chain FL rounds, cutting idle compute between rounds",
+        "Extended the same FL workers to real edge hardware on AWS IoT Greengrass Core, triggering training rounds over MQTT for an actual edge/IoT ML deployment"
       ]
     }
   ]
