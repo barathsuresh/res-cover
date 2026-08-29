@@ -579,7 +579,7 @@ with st.sidebar:
     st.divider()
     page = st.radio(
         "Navigate",
-        ["🏠 Dashboard", "⚡ Quick Apply", "➕ Add Job", "📋 Jobs", "⭐ Important", "▶️ Run Pipeline", "🗄️ Archive"],
+        ["🏠 Dashboard", "⚡ Quick Apply", "➕ Add Job", "📋 Jobs", "⭐ Important", "▶️ Run Pipeline", "🗄️ Archive", "👤 Profile"],
         label_visibility="collapsed",
     )
 
@@ -747,10 +747,11 @@ elif page == "⚡ Quick Apply":
             placeholder="Paste the full job description here...",
             key="quick_apply_jd",
         )
-        c1, c2, c3 = st.columns(3)
+        c1, c2, c3, c4 = st.columns(4)
         company = c1.text_input("Company (optional)", placeholder="Leave blank — LLM extracts from JD", key="quick_apply_company")
-        link = c2.text_input("Job Link (optional)", placeholder="https://...", key="quick_apply_link")
-        run_mode = c3.radio(
+        role = c2.text_input("Role (optional)", placeholder="Leave blank — LLM extracts from JD", key="quick_apply_role")
+        link = c3.text_input("Job Link (optional)", placeholder="https://...", key="quick_apply_link")
+        run_mode = c4.radio(
             "What to generate", ["Resume + Cover Letter", "Cover Letter Only"],
             key="quick_apply_mode",
         )
@@ -772,7 +773,7 @@ elif page == "⚡ Quick Apply":
         else:
             from pipeline import _process_job
 
-            add_job(link.strip(), jd.strip(), company.strip(), "", cl_personalization.strip())
+            add_job(link.strip(), jd.strip(), company.strip(), role.strip(), cl_personalization.strip())
             conn = _connect()
             job_id = conn.execute(
                 "SELECT id FROM jobs WHERE jd = ? ORDER BY id DESC LIMIT 1", (jd.strip(),)
@@ -782,7 +783,7 @@ elif page == "⚡ Quick Apply":
             mode = "cover_letter" if run_mode == "Cover Letter Only" else "both"
             with st.spinner("Generating..."):
                 try:
-                    company, role = _process_job(job_id, link.strip(), jd.strip(), company.strip(), "", cl_personalization.strip(), mode, force)
+                    company, role = _process_job(job_id, link.strip(), jd.strip(), company.strip(), role.strip(), cl_personalization.strip(), mode, force)
                     _update_job(job_id, status="done", company=company, role=role, error=None)
                     # Persist the result: the download buttons below are plain
                     # st.buttons, and clicking one reruns the script with the
@@ -1129,3 +1130,62 @@ elif page == "🗄️ Archive":
         st.caption(f"{len(rows)} archived job(s)")
         for row in rows:
             _job_card(row, expanded=False)
+
+
+# ═══════════════════════════════════════════════
+#  PROFILE — read-only view of data.json (source of truth for every
+#  generated resume). Edit data.json directly to change anything here.
+# ═══════════════════════════════════════════════
+elif page == "👤 Profile":
+    import resume_builder
+    _RD = resume_builder.BASE_RESUME_DATA
+
+    st.header(_RD.get("name", "Profile"))
+    st.caption(_RD.get("contact", ""))
+
+    st.divider()
+    st.subheader("🎓 Education")
+    for edu in _RD.get("education", []):
+        st.markdown(f"**{edu['school']}** – {edu['location']}")
+        st.markdown(f"*{edu['degree']}* &nbsp;&nbsp; {edu['dates']}", unsafe_allow_html=True)
+        for line in edu.get("extra", []):
+            st.markdown(f"- {line}", unsafe_allow_html=True)
+        pool = edu.get("coursework_pool")
+        if pool:
+            with st.expander(f"Coursework pool ({len(pool)})"):
+                st.write(", ".join(pool))
+        st.write("")
+
+    st.divider()
+    st.subheader("🛠️ Skills")
+    for cat, csv in _RD.get("skills", []):
+        st.markdown(f"**{cat}:** {csv}")
+
+    st.divider()
+    st.subheader("💼 Experience")
+    for exp in _RD.get("experience", []):
+        st.markdown(f"**{exp['company']}** — {exp['role']}")
+        st.caption(f"{exp['dates']} · {exp['location']}")
+        for b in exp.get("bullets", []):
+            st.markdown(f"- {b}", unsafe_allow_html=True)
+        st.write("")
+
+    st.divider()
+    st.subheader(f"📁 Projects ({len(_RD.get('projects', []))})")
+    for proj in _RD.get("projects", []):
+        with st.expander(proj["title"]):
+            st.caption(proj.get("tech", ""))
+            link = proj.get("link_url")
+            if link:
+                st.markdown(f"[{proj.get('link', 'Link')}]({link})")
+            for b in proj.get("bullets", []):
+                st.markdown(f"- {b}", unsafe_allow_html=True)
+
+    open_source = _RD.get("open_source") or []
+    if open_source:
+        st.divider()
+        st.subheader("🌐 Open Source")
+        for os_entry in open_source:
+            with st.expander(os_entry["title"]):
+                for b in os_entry.get("bullets", []):
+                    st.markdown(f"- {b}", unsafe_allow_html=True)
