@@ -1,0 +1,100 @@
+{
+  "name": "Barath Suresh",
+  "contact": "Arizona | (623) 212-9705 | bsures11@asu.edu | linkedin.com/in/barath-suresh/ | github.com/barathsuresh | barathsuresh.github.io",
+  "education": [
+    {
+      "school": "Arizona State University",
+      "location": "Tempe, AZ",
+      "degree": "Master of Science in Computer Science | GPA: 3.67/4.00",
+      "dates": "August 2025 – May 2027",
+      "extra": []
+    },
+    {
+      "school": "SASTRA Deemed University",
+      "location": "India",
+      "degree": "Bachelor of Technology in Computer Science",
+      "dates": "August 2020 – May 2024",
+      "extra": []
+    }
+  ],
+  "skills": [
+    ["Languages & Core", "Dart, Java, Python, C/C++, JavaScript, SQL"],
+    [
+      "Mobile & Frameworks",
+      "Flutter, Android Studio, Cross-Platform Development, Provider, State Management, Responsive UI"
+    ],
+    [
+      "Security & Cryptography",
+      "AES-256 Encryption, End-to-End Encryption (E2EE), Argon2, BIP39 Passphrases, Zero-Trust, OAuth 2.0, JWT"
+    ],
+    [
+      "Databases & Storage",
+      "Firebase (Firestore, Auth), Hive (Encrypted Local DB), SQLite, Redis, Hazelcast, PostgreSQL"
+    ],
+    [
+      "Backend & DevOps",
+      "REST APIs, WebSockets, StreamBuilder, Docker, CI/CD, Git, Linux"
+    ],
+    ["Practices & Tools", "Jira, End-to-End Testing, Agile"]
+  ],
+  "experience": [
+    {
+      "company": "TATA ELXSI LTD",
+      "role": "Software Engineer",
+      "location": "Chennai, India",
+      "dates": "December 2024 – July 2025",
+      "bullets": [
+        "Secured 50+ REST APIs with role-based SSO using Spring Security, Azure AD OAuth 2.0, and JWT claims, cutting authorization latency from 100ms to 7ms",
+        "Engineered an asynchronous bulk-import pipeline using Java, Spring Boot, and RabbitMQ for OTT content catalog metadata, eliminating UI timeouts and reducing processing time by 70% on 20,000-row files",
+        "Added a Hazelcast cache (Spring Cache) for frequently accessed catalog reads, with eviction when catalog data changes to keep content fresh",
+        "Built a log anomaly detection service across 6 Spring Boot microservices using Spring AI to flag batch-upload failures, cutting incident detection time from 2 hours to 40 minutes",
+        "Owned end-to-end quality for the platform, running weekly E2E test cycles and raising, prioritizing, and tracking defects in Jira through to verified resolution"
+      ]
+    },
+    {
+      "company": "TATA ELXSI LTD",
+      "role": "Software Engineer Intern",
+      "location": "Bengaluru, India",
+      "dates": "January 2024 – June 2024",
+      "bullets": [
+        "Collaborated in Agile sprints with senior engineers to build WebSocket relay services and PostgreSQL persistence layers for real-time Grafana dashboards",
+        "Developed high-throughput telemetry ingestion pipelines using Python, FastAPI, and MQTT to process streaming metrics from set-top box devices"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "title": "HELIUMMESSENGER: Real-Time Encrypted Chat Application",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/HeliumMessenger",
+      "tech": "Flutter, Dart, Firebase Firestore, Firebase Auth, AES Encryption, Provider",
+      "bullets": [
+        "Built an end-to-end encrypted messaging application using Flutter and Dart, encrypting messages client-side with AES before transmission to prevent plaintext storage",
+        "Implemented real-time message synchronization using Firestore snapshot listeners and StreamBuilder, eliminating battery-draining polling for instant updates",
+        "Architected dynamic query pagination in chat feeds to support infinite scrolling while maintaining low memory consumption during active conversations"
+      ]
+    },
+    {
+      "title": "HEXSCRIPT: Privacy-First Offline Encrypted Notes App",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/HexScript",
+      "tech": "Flutter, Dart, Hive, Firebase (Auth, Firestore), AES-256, Provider",
+      "bullets": [
+        "Engineered a privacy-focused mobile notes application using Flutter and Hive, implementing client-side AES-256 encryption to prevent plaintext exposure on disk",
+        "Architected an offline-first synchronization layer caching encrypted notes locally in Hive and automatically reconciling updates with Firestore upon network return",
+        "Secured note decryption keys to individual Firebase user authentication sessions, ensuring complete data isolation across shared mobile devices"
+      ]
+    },
+    {
+      "title": "THROTTLR: Distributed Rate Limiting & Auth Platform",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/throttlr",
+      "tech": "Java, Spring Boot, Redis, Lua, GCP Cloud Run, Terraform",
+      "bullets": [
+        "Designed secure client authentication across REST endpoints using Argon2-hashed passphrases and IP-level rate limiting to block brute-force attacks",
+        "Engineered a distributed rate-limiting engine on GCP Cloud Run using atomic Redis Lua scripts across multiple rate-limiting algorithms",
+        "Deployed containerized backend services via Terraform, tuning autoscaling and CPU concurrency to boost throughput 11.2x (9.8 to 109.5 req/sec) across 20K requests with zero errors and 182ms mean latency"
+      ]
+    }
+  ]
+}

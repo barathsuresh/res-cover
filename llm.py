@@ -119,6 +119,36 @@ def _call_gemini(system: str, user: str, model: str, timeout: int, attempts: int
             _retry_wait(attempt, f"{type(e).__name__} after {timeout}s", attempts)
 
 
+def _call_nvidia(system: str, user: str, model: str, timeout: int, attempts: int) -> str:
+    import httpx
+    from openai import OpenAI, APIStatusError, APITimeoutError, APIConnectionError
+
+    client = OpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=_api_key("nvidia"),
+        timeout=timeout,
+    )
+
+    for attempt in range(attempts):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user",   "content": user},
+                ],
+            )
+            return response.choices[0].message.content
+        except APIStatusError as e:
+            if e.status_code not in _RETRYABLE_CODES or attempt == attempts - 1:
+                raise
+            _retry_wait(attempt, f"API error {e.status_code}", attempts)
+        except (APITimeoutError, APIConnectionError, httpx.TimeoutException, httpx.TransportError) as e:
+            if attempt == attempts - 1:
+                raise
+            _retry_wait(attempt, f"{type(e).__name__} after {timeout}s", attempts)
+
+
 def _call_provider(
     system: str,
     user: str,
@@ -135,6 +165,8 @@ def _call_provider(
         return _call_ollama(system, user, model, timeout, attempts)
     if provider == "gemini":
         return _call_gemini(system, user, model, timeout, attempts)
+    if provider == "nvidia":
+        return _call_nvidia(system, user, model, timeout, attempts)
     raise ValueError(f"Unsupported provider: {provider}")
 
 
@@ -164,6 +196,17 @@ def _list_gemini_models() -> list[str]:
     ]
 
 
+def _list_nvidia_models() -> list[str]:
+    from openai import OpenAI
+
+    client = OpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=_api_key("nvidia"),
+        timeout=config.HEALTH_TIMEOUT,
+    )
+    return [m.id for m in client.models.list()]
+
+
 def list_models(provider: str | None = None) -> list[str]:
     """Live model list from the provider. Raises on failure — caller decides."""
     provider = provider or config.PROVIDER
@@ -171,6 +214,8 @@ def list_models(provider: str | None = None) -> list[str]:
         models = _list_ollama_models()
     elif provider == "gemini":
         models = _list_gemini_models()
+    elif provider == "nvidia":
+        models = _list_nvidia_models()
     else:
         raise ValueError(f"Unsupported provider: {provider}")
     return sorted(models)

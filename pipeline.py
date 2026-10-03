@@ -186,7 +186,13 @@ def _fill_ratio(pdf_path: str) -> float:
 # ─────────────────────────────────────────────
 
 _BUDGET_SLACK = 1.05
-_PROJECT_PICK_COUNT = 3
+_PROJECT_PICK_COUNT = 3  # legacy rewrite-mode prompt only (cover_letter-only mode); reorder mode uses MIN/MAX below
+
+# Reorder mode: how many projects the JD gets to choose, JD-driven within this
+# range rather than a fixed count — a JD with heavy project-signal can justify
+# a 4th, a thinner one still gets a clean 3.
+_PROJECT_PICK_MIN = 3
+_PROJECT_PICK_MAX = 4
 
 # Floor on how many skill categories the model may drop as irrelevant to a
 # JD (of 7 currently in data.json) — never lets the Skills section thin out
@@ -205,6 +211,11 @@ _MAX_LEADING = 12.5
 # with fewer base bullets than this keep all of them.
 _EXPERIENCE_BULLET_CAP = 4
 
+# Most bullets any one project may render. Same idea as _EXPERIENCE_BULLET_CAP —
+# the model picks which ones, by JD relevance. Projects with fewer base bullets
+# than this keep all of them.
+_PROJECT_BULLET_CAP = 3
+
 # Per-attempt budget multiplier. The master resume runs longer than one page, so
 # attempt 1 asks for master-length and each retry demands real compression.
 _SHRINK_SCHEDULE = (1.0, 0.85, 0.75)
@@ -213,6 +224,11 @@ _SHRINK_SCHEDULE = (1.0, 0.85, 0.75)
 def _exp_want(base_bullets: list[str]) -> int:
     """How many bullets this experience entry should render."""
     return min(len(base_bullets), _EXPERIENCE_BULLET_CAP)
+
+
+def _proj_want(base_bullets: list[str]) -> int:
+    """How many bullets this project should render."""
+    return min(len(base_bullets), _PROJECT_BULLET_CAP)
 
 
 # How much of master length actually fits on one page. Measured, not assumed:
@@ -230,14 +246,17 @@ def _fit_scale() -> float:
 
     import tempfile
 
-    # Worst case: the three projects carrying the most bullet text.
+    # Worst case: since project count is now JD-driven (MIN..MAX), the worst
+    # case for page-fit is the model picking MAX projects — probe that, not MIN.
     heaviest = sorted(
         BASE_RESUME_DATA["projects"],
-        key=lambda p: sum(len(b) for b in p["bullets"]),
+        key=lambda p: sum(len(b) for b in p["bullets"][:_proj_want(p["bullets"])]),
         reverse=True,
-    )[:_PROJECT_PICK_COUNT]
+    )[:_PROJECT_PICK_MAX]
     probe = copy.deepcopy(BASE_RESUME_DATA)
     probe["projects"] = copy.deepcopy(heaviest)
+    for p in probe["projects"]:
+        p["bullets"] = p["bullets"][:_proj_want(p["bullets"])]
     _restore_missing_sections(probe)
 
     def fits(scale: float) -> bool:
@@ -248,7 +267,12 @@ def _fit_scale() -> float:
                 # Same formula _bullets_budget uses, slack included — otherwise
                 # the real budget runs 5% over what was calibrated and overflows.
                 per = int(sum(len(b) for b in entry["bullets"]) * scale * _BUDGET_SLACK) // n
-                entry["bullets"] = [b[:per].rstrip() for b in entry["bullets"]]
+                # Strip inline tags before truncating — slicing raw text can land
+                # mid-tag (e.g. inside "<b>") and crash the PDF's XML parser. Only
+                # the character count matters for this probe, not real formatting.
+                entry["bullets"] = [
+                    re.sub(r"</?b>", "", b)[:per].rstrip() for b in entry["bullets"]
+                ]
         path = Path(tempfile.mkdtemp()) / "probe.pdf"
         try:
             build_resume(trial, str(path))
@@ -321,10 +345,10 @@ def _budget_block(shrink: float = 1.0) -> str:
 
 
 def _restore_missing_sections(resume_data: dict) -> None:
-    """Deterministic backstop: enforce exactly _PROJECT_PICK_COUNT projects — pad
-    from base (in base order) if the LLM dropped too many, truncate if it kept too
-    many. Never loses content below the required count; never forces all base
-    projects back in.
+    """Deterministic backstop, used only by the _fit_scale() worst-case probe:
+    enforce exactly _PROJECT_PICK_MAX projects (the worst case for page-fit,
+    now that reorder mode picks a JD-driven count in [_PROJECT_PICK_MIN,
+    _PROJECT_PICK_MAX]) — pad from base if fewer were set up, truncate if more.
 
     open_source is deliberately NOT restored: it is the lowest-signal section and
     the model decides per JD whether it earns its lines. A dropped one stays
@@ -336,12 +360,12 @@ def _restore_missing_sections(resume_data: dict) -> None:
     projects = resume_data.setdefault("projects", [])
     titles = {p.get("title", "") for p in projects}
     for base_proj in BASE_RESUME_DATA["projects"]:
-        if len(projects) >= _PROJECT_PICK_COUNT:
+        if len(projects) >= _PROJECT_PICK_MAX:
             break
         if base_proj["title"] not in titles:
             projects.append(copy.deepcopy(base_proj))
             titles.add(base_proj["title"])
-    del projects[_PROJECT_PICK_COUNT:]
+    del projects[_PROJECT_PICK_MAX:]
 
     # Experience entries render a fixed count too, but WHICH bullets is the
     # model's call. Pad from base order if it returned too few, truncate from the
@@ -489,11 +513,21 @@ def _build_reorder_prompt(jd: str, cl_personalization: str = "") -> str:
         lines.append("")
 
     lines.append(
-        f"PROJECTS — choose exactly {_PROJECT_PICK_COUNT} of {len(BASE_RESUME_DATA['projects'])} by "
-        "title, most JD-relevant first; keep ALL bullets of each chosen project, just reorder them:"
+        f"PROJECTS — choose {_PROJECT_PICK_MIN} or {_PROJECT_PICK_MAX} of "
+        f"{len(BASE_RESUME_DATA['projects'])} by title, most JD-relevant first. Pick "
+        f"{_PROJECT_PICK_MAX} only when this JD's project-signal genuinely justifies a 4th — "
+        f"don't pad to {_PROJECT_PICK_MAX} with a weak project just to hit the max; default to "
+        f"{_PROJECT_PICK_MIN} strong picks over {_PROJECT_PICK_MAX} with a filler. For each chosen "
+        "project, select and order the most JD-relevant bullets out of however many the project "
+        "actually has (some have 3, some have 5) — you do not need to use all of them if fewer "
+        "tell a tighter story for this JD:"
     )
     for proj in BASE_RESUME_DATA["projects"]:
-        lines.append(f'Project "{proj["title"]}":')
+        want = _proj_want(proj["bullets"])
+        lines.append(
+            f'Project "{proj["title"]}" — select and order exactly {want} of '
+            f'{len(proj["bullets"])} bullets by index:'
+        )
         lines += [f"  [{j}] {b}" for j, b in enumerate(proj["bullets"])]
         lines.append("")
 
@@ -572,7 +606,7 @@ OUTPUT — return ONLY this JSON, no markdown, no explanation:
   "open_source_bullet_order": [0,1],
   "cover_letter_text": "Dear Hiring Manager, ... (full letter, no signature line)"
 }}
-Field notes: project_bullet_order is parallel to project_order (one permutation array per chosen project, in that order). skill_item_order is parallel to skill_category_order — omit a category's entry entirely if you dropped that category, don't leave a placeholder. experience_bullet_order is parallel to the base EXPERIENCE list order shown above (index 0 = first experience entry), each array is a selection+order of that entry's bullet indices at the required length. open_source_bullet_order is only used when include_open_source is true. skill_gaps may be an empty list — omit entries rather than force 3. coursework_order is exact strings copied from the coursework pool, most relevant first — omit or leave empty if none of the pool is relevant to this JD.""")
+Field notes: project_order has {_PROJECT_PICK_MIN} or {_PROJECT_PICK_MAX} entries (your call, per the PROJECTS instruction above) — project_bullet_order is parallel to project_order (one array per chosen project, in that order — each is a selection+order of that project's bullet indices at the required length, same as experience_bullet_order). skill_item_order is parallel to skill_category_order — omit a category's entry entirely if you dropped that category, don't leave a placeholder. experience_bullet_order is parallel to the base EXPERIENCE list order shown above (index 0 = first experience entry), each array is a selection+order of that entry's bullet indices at the required length. open_source_bullet_order is only used when include_open_source is true. skill_gaps may be an empty list — omit entries rather than force 3. coursework_order is exact strings copied from the coursework pool, most relevant first — omit or leave empty if none of the pool is relevant to this JD.""")
 
     return "\n".join(lines)
 
@@ -585,8 +619,14 @@ _REORDER_SCHEMA = {
         "cover_letter_text",
     ],
     "properties": {
-        "project_order": {"type": "array", "items": {"type": "string"}},
-        "project_bullet_order": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}}},
+        "project_order": {
+            "type": "array", "items": {"type": "string"},
+            "minItems": _PROJECT_PICK_MIN, "maxItems": _PROJECT_PICK_MAX,
+        },
+        "project_bullet_order": {
+            "type": "array", "items": {"type": "array", "items": {"type": "integer"}},
+            "minItems": _PROJECT_PICK_MIN, "maxItems": _PROJECT_PICK_MAX,
+        },
         "skill_category_order": {"type": "array", "items": {"type": "string"}},
         "skill_item_order": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}}},
         "skill_gaps": {
@@ -669,16 +709,19 @@ def _resolve_reorder(orders: dict) -> dict:
             return by_name[head]
         return next((base for name, base in by_name.items() if name and name in key), None)
 
+    # Project count is JD-driven within [_PROJECT_PICK_MIN, _PROJECT_PICK_MAX] —
+    # keep however many the model picked (capped at MAX), only padding up if it
+    # came in under MIN.
     picked = []
     for t in titles:
         resolved = _resolve_title(t)
         if resolved and resolved not in picked:
             picked.append(resolved)
-        if len(picked) >= _PROJECT_PICK_COUNT:
+        if len(picked) >= _PROJECT_PICK_MAX:
             break
-    picked = picked[:_PROJECT_PICK_COUNT]
+    picked = picked[:_PROJECT_PICK_MAX]
     for p in BASE_RESUME_DATA["projects"]:
-        if len(picked) >= _PROJECT_PICK_COUNT:
+        if len(picked) >= _PROJECT_PICK_MIN:
             break
         if p["title"] not in picked:
             picked.append(p["title"])
@@ -687,9 +730,9 @@ def _resolve_reorder(orders: dict) -> dict:
     new_projects = []
     for idx, title in enumerate(picked):
         proj = copy.deepcopy(base_by_title[title])
+        want = _proj_want(proj["bullets"])
         order_i = proj_bullet_orders[idx] if idx < len(proj_bullet_orders) else None
-        permuted = _permute(proj["bullets"], order_i)
-        proj["bullets"] = permuted if permuted is not None else proj["bullets"]
+        proj["bullets"] = _select(proj["bullets"], order_i, want)
         new_projects.append(proj)
     data["projects"] = new_projects
 

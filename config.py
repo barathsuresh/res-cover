@@ -8,20 +8,22 @@ the CLI (pipeline.py) and the app stay in sync.
 import json
 from pathlib import Path
 
-PROVIDERS = ("gemini", "ollama")
+PROVIDERS = ("gemini", "ollama", "nvidia")
 
 DEFAULT_PROVIDER = "gemini"
 
 # Default model per provider. Overridable from the UI.
 DEFAULT_MODELS = {
     "gemini": "gemini-3.5-flash-lite",
-    "ollama": "gemma4:31b",
+    "ollama": "nemotron-3-ultra",
+    "nvidia": "openai/gpt-oss-120b",
 }
 
 # Which env var holds the API key for each provider.
 ENV_VARS = {
     "gemini": "GEMINI_API_KEY",
     "ollama": "OLLAMA_API_KEY",
+    "nvidia": "NVIDIA_API_KEY",
 }
 
 # Per-provider request timeout in seconds, used for both real calls and the
@@ -29,6 +31,7 @@ ENV_VARS = {
 TIMEOUTS = {
     "gemini": 120,
     "ollama": 120,
+    "nvidia": 120,
 }
 
 HEALTH_TIMEOUT = 20  # seconds — health check fails fast, unlike a real call

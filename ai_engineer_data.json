@@ -1,0 +1,100 @@
+{
+  "name": "Barath Suresh",
+  "contact": "Arizona | (623) 212-9705 | bsures11@asu.edu | linkedin.com/in/barath-suresh/ | github.com/barathsuresh | barathsuresh.github.io",
+  "education": [
+    {
+      "school": "Arizona State University",
+      "location": "Tempe, AZ",
+      "degree": "Master of Science in Computer Science | GPA: 3.67/4.00",
+      "dates": "August 2025 – May 2027",
+      "extra": []
+    },
+    {
+      "school": "SASTRA Deemed University",
+      "location": "India",
+      "degree": "Bachelor of Technology in Computer Science",
+      "dates": "August 2020 – May 2024",
+      "extra": []
+    }
+  ],
+  "skills": [
+    ["Languages & Core", "Python, PyTorch, Java, C/C++, SQL"],
+    [
+      "AI / ML & LLMs",
+      "Retrieval-Augmented Generation (RAG), Vector Search (pgvector), NVIDIA NIM, LoRA/QLoRA, PEFT, Hugging Face, Prompt Engineering"
+    ],
+    [
+      "Frameworks & APIs",
+      "FastAPI, Spring AI, Spring Boot, REST APIs, Microservices, AsyncIO"
+    ],
+    [
+      "Databases & Messaging",
+      "PostgreSQL (pgvector), Redis, Hazelcast, RabbitMQ, Kafka, AWS S3"
+    ],
+    [
+      "Cloud & MLOps",
+      "AWS SageMaker, GCP, Docker, Docker Compose, Terraform, CI/CD, Git, GitHub Actions, Prometheus, Linux"
+    ],
+    ["Practices & Tools", "Jira, End-to-End Testing, Agile"]
+  ],
+  "experience": [
+    {
+      "company": "TATA ELXSI LTD",
+      "role": "Software Engineer",
+      "location": "Chennai, India",
+      "dates": "December 2024 – July 2025",
+      "bullets": [
+        "Built an automated log anomaly detection pipeline across 6 microservices using Python, Spring AI, and Gemma 3 LLM inference to flag high-priority batch upload crashes, cutting incident detection time from 2 hours to 40 minutes",
+        "Engineered an asynchronous log processing pipeline using Python and RabbitMQ to batch stream microservice crash logs into Grafana Loki for real-time incident querying and triage",
+        "Engineered an asynchronous bulk-import pipeline using Java, Spring Boot, and RabbitMQ for OTT content catalog metadata, eliminating UI timeouts and reducing processing time by 70% on 20,000-row files",
+        "Containerized local LLM inference runtimes and backend microservices on Linux using Docker Compose, configuring Prometheus and Grafana dashboards to monitor GPU/CPU utilization and prevent serving bottlenecks",
+        "Implemented role-based token authentication across 50+ REST endpoints using Spring Security and JWT validation, reducing authorization latency from 100ms to 7ms"
+      ]
+    },
+    {
+      "company": "TATA ELXSI LTD",
+      "role": "Software Engineer Intern",
+      "location": "Bengaluru, India",
+      "dates": "January 2024 – June 2024",
+      "bullets": [
+        "Developed interactive monitoring interfaces using JavaScript, HTML/CSS, and WebSockets to stream live telemetry metrics and operational status for connected set-top box devices",
+        "Collaborated in Agile sprints with senior engineers to design PostgreSQL schemas and build Python FastAPI endpoints for ingesting and querying set-top box diagnostic event logs via Git workflows"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "title": "NEUROSCRIBE: Medical Segmentation-to-Report AI Pipeline",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/neuroscribe",
+      "tech": "PyTorch, MONAI, NVIDIA NIM, QLoRA, PEFT, AWS SageMaker, Terraform",
+      "bullets": [
+        "Fine-tuned open-source LLMs on medical imaging datasets using PyTorch, QLoRA, and PEFT to automatically generate structured clinical radiology drafts from MRI scans, improving ROUGE-L from 0.49 to 0.75 and BERTScore from 0.88 to 0.96 over the base model",
+        "Architected an end-to-end multimodal pipeline combining medical image segmentation with automated groundedness filtering to eliminate medical hallucinations in generated reports, reaching 98.3% factual groundedness on 119 held-out test examples with zero hallucinated measurements",
+        "Automated scalable model deployment to AWS SageMaker inference endpoints using Terraform to support real-time clinical review workflows"
+      ]
+    },
+    {
+      "title": "SIFT: Code RAG CLI for Semantic Codebase Search",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/sift",
+      "tech": "Python, PostgreSQL (pgvector), tree-sitter, NVIDIA NIM, Pytest",
+      "bullets": [
+        "Architected a semantic code retrieval CLI in Python using tree-sitter AST parsing, NVIDIA NIM embeddings, and PostgreSQL/pgvector for repository-wide Q&A",
+        "Implemented hybrid search using Reciprocal Rank Fusion (RRF) to accurately retrieve exact symbol and function definitions alongside natural-language context",
+        "Optimized repository indexing throughput across multi-file codebases by engineering a bounded concurrent thread pool with incremental caching, boosting embedding throughput 3x on a 150K-chunk benchmark and cutting full re-index time from ~36 minutes to ~6 seconds"
+      ]
+    },
+    {
+      "title": "THROTTLR: AI Inference Protection & Rate Limiting Engine",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/throttlr",
+      "tech": "Python, Java, Spring Boot, Redis, Lua, GCP Cloud Run, Terraform",
+      "bullets": [
+        "Engineered a distributed request-throttling engine using Redis Lua scripts across multiple rate-limiting algorithms to protect downstream LLM inference endpoints from traffic spikes",
+        "Deployed containerized services to GCP Cloud Run with Terraform autoscaling policies, boosting throughput 11.2x (9.8 to 109.5 req/sec) across 20K requests with zero errors and 182ms mean latency",
+        "Added per-tenant token-quota tracking to cap LLM inference costs and enforce fair usage across clients"
+      ]
+    }
+  ]
+}

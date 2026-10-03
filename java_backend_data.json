@@ -1,0 +1,97 @@
+{
+  "name": "Barath Suresh",
+  "contact": "Arizona | (623) 212-9705 | bsures11@asu.edu | linkedin.com/in/barath-suresh/ | github.com/barathsuresh | barathsuresh.github.io",
+  "education": [
+    {
+      "school": "Arizona State University",
+      "location": "Tempe, AZ",
+      "degree": "Master of Science in Computer Science | GPA: 3.67/4.00",
+      "dates": "August 2025 – May 2027",
+      "extra": []
+    },
+    {
+      "school": "SASTRA Deemed University",
+      "location": "India",
+      "degree": "Bachelor of Technology in Computer Science",
+      "dates": "August 2020 – May 2024",
+      "extra": []
+    }
+  ],
+  "skills": [
+    ["Languages", "Java, Go, Python, C/C++, SQL"],
+    [
+      "Backend Frameworks",
+      "Spring Boot, Spring Security, Spring AI, FastAPI, REST APIs, Microservices, Distributed Systems"
+    ],
+    [
+      "Messaging & Caching",
+      "RabbitMQ, Kafka, Hazelcast, Redis, WebSocket, MQTT"
+    ],
+    ["Databases & Storage", "PostgreSQL, MongoDB, pgvector, AWS S3"],
+    [
+      "Cloud & DevOps",
+      "Docker, Docker Compose, Kubernetes, AWS, GCP, Terraform, CI/CD, Prometheus, Grafana, Linux, Git"
+    ],
+    ["Practices & Tools", "Jira, End-to-End Testing, Agile"]
+  ],
+  "experience": [
+    {
+      "company": "TATA ELXSI LTD",
+      "role": "Software Engineer",
+      "location": "Chennai, India",
+      "dates": "December 2024 – July 2025",
+      "bullets": [
+        "Engineered an asynchronous bulk-import pipeline using Java, Spring Boot, and RabbitMQ for OTT content catalog metadata, eliminating UI timeouts and reducing processing time by 70% on 20,000-row files",
+        "Added a Hazelcast cache (Spring Cache) for frequently accessed catalog reads, with eviction when catalog data changes to keep content fresh",
+        "Secured 50+ REST APIs with role-based SSO using Spring Security, Azure AD OAuth 2.0, and JWT claims, cutting authorization latency from 100ms to 7ms",
+        "Built a log anomaly detection service across 6 Spring Boot microservices using Spring AI to flag batch-upload failures, cutting incident detection time from 2 hours to 40 minutes",
+        "Owned end-to-end quality for the platform, running weekly E2E test cycles and raising, prioritizing, and tracking defects in Jira through to verified resolution"
+      ]
+    },
+    {
+      "company": "TATA ELXSI LTD",
+      "role": "Software Engineer Intern",
+      "location": "Bengaluru, India",
+      "dates": "January 2024 – June 2024",
+      "bullets": [
+        "Developed high-throughput telemetry ingestion pipelines using Python, FastAPI, and MQTT to process streaming metrics from set-top box devices",
+        "Collaborated in Agile sprints with senior engineers to design PostgreSQL schemas and build WebSocket relay services for real-time Grafana dashboards"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "title": "THROTTLR: Distributed Rate Limiting Engine",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/throttlr",
+      "tech": "Java, Spring Boot, Redis, Lua, GCP Cloud Run, Terraform",
+      "bullets": [
+        "Built a distributed rate-limiting engine in Java Spring Boot using atomic Redis Lua scripts across multiple rate-limiting algorithms",
+        "Deployed containerized backend services to GCP Cloud Run via Terraform, tuning autoscaling and CPU concurrency to boost throughput 11.2x (9.8 to 109.5 req/sec) across 20K requests with zero errors and 182ms mean latency",
+        "Designed secure client authentication across REST endpoints using Argon2-hashed passphrases and IP-level rate limiting to block brute-force login and registration attacks"
+      ]
+    },
+    {
+      "title": "PRISM: Distributed Video Streaming Platform",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/prism",
+      "tech": "Java, Spring Boot, Microservices, RabbitMQ, Docker, AWS S3, Zipkin",
+      "bullets": [
+        "Architected a developer-focused video infrastructure platform across 8 Java Spring Boot microservices, decoupling uploads from FFmpeg transcoding via RabbitMQ to eliminate upload blocking, scaling async transcoding of uploads up to 5GB into 6 multi-bitrate HLS tiers",
+        "Enforced multi-tenant isolation across REST endpoints using BCrypt-hashed API key authentication and Amazon S3 object storage",
+        "Instrumented distributed tracing and service telemetry across all microservices using Zipkin, Prometheus, and Grafana to identify latency bottlenecks across async transcoding pipelines"
+      ]
+    },
+    {
+      "title": "GEOLINK: High-Throughput Search & Autocomplete API",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/geolink",
+      "tech": "Go, PostgreSQL, Redis, Kafka, Typesense, Docker, Kubernetes",
+      "bullets": [
+        "Engineered a high-throughput map search API using Go, Typesense, and PostgreSQL to serve instant location suggestions across 12M global records without latency spikes, cutting bulk import time from ~45 minutes to ~8 minutes by dropping indexes before load",
+        "Built a weighted re-ranking engine using 4 signals (country, continent, feature type, recent searches) to deliver personalized autocomplete suggestions without session overhead",
+        "Streamed user search and click interactions asynchronously via Kafka to PostgreSQL and Redis caching tiers, keeping analytics processing off the live query path"
+      ]
+    }
+  ]
+}

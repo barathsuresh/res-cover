@@ -40,7 +40,7 @@ pdfmetrics.registerFontFamily(
 #  BASE RESUME DATA  ← loaded from data.json
 # ─────────────────────────────────────────────
 
-_DATA_JSON = os.path.join(os.path.dirname(__file__), "data.json")
+_DATA_JSON = os.path.join(os.path.dirname(__file__), "main_data", "data.json")
 _CONTACT_JSON = os.path.join(os.path.dirname(__file__), "contact.json")
 
 with open(_DATA_JSON, "r", encoding="utf-8") as _f:
@@ -105,42 +105,42 @@ def set_education_dates(index: int, new_dates: str) -> None:
 # ─────────────────────────────────────────────
 
 W, H = letter
-LM = RM = 0.12 * inch
-TM = BM = 0.15 * inch
+LM = RM = 0.40 * inch
+TM = BM = 0.35 * inch
 
 
 # ─────────────────────────────────────────────
 #  STYLES
 # ─────────────────────────────────────────────
 
-DEFAULT_LEADING = 11.25
+DEFAULT_LEADING = 11.4
 
 def build_styles(leading: float = DEFAULT_LEADING):
-    base = dict(fontName="Arial", fontSize=10, leading=leading)
-    bold = dict(fontName="Arial-Bold",  fontSize=10, leading=leading)
+    base = dict(fontName="Arial", fontSize=9.6, leading=leading)
+    bold = dict(fontName="Arial-Bold",  fontSize=9.6, leading=leading)
 
     return {
         "name": ParagraphStyle("name",
-            fontName="Arial-Bold", fontSize=14, leading=16.5,
-            alignment=TA_CENTER, spaceAfter=1),
+            fontName="Arial-Bold", fontSize=15, leading=17.5,
+            alignment=TA_CENTER, spaceAfter=2),
 
         "contact": ParagraphStyle("contact",
-            fontName="Arial", fontSize=8.8, leading=10.5,
-            alignment=TA_CENTER, spaceAfter=1),
+            fontName="Arial", fontSize=9.0, leading=11.2,
+            alignment=TA_CENTER, spaceAfter=2),
 
         "section": ParagraphStyle("section",
-            fontName="Arial-Bold", fontSize=10, leading=12,
-            spaceBefore=1, spaceAfter=0, textTransform="uppercase"),
+            fontName="Arial-Bold", fontSize=10.5, leading=13.0,
+            spaceBefore=2, spaceAfter=1, textTransform="uppercase"),
 
         "org": ParagraphStyle("org", **bold, spaceBefore=0, spaceAfter=0),
 
         "role": ParagraphStyle("role",
-            fontName="Arial-Italic", fontSize=9.8, leading=12.0),
+            fontName="Arial-Italic", fontSize=9.5, leading=11.4),
 
         "body": ParagraphStyle("body", **base),
 
         "bullet": ParagraphStyle("bullet",
-            **base, leftIndent=13, firstLineIndent=-9, spaceAfter=0),
+            **base, leftIndent=12, firstLineIndent=-8, spaceAfter=1.5),
 
         "summary": ParagraphStyle("summary",
             **base, spaceAfter=2),
@@ -175,16 +175,16 @@ def esc(text) -> str:
 
 def hr():
     return HRFlowable(width="100%", thickness=0.8, color=colors.black,
-                      spaceAfter=1, spaceBefore=0)
+                      spaceAfter=2, spaceBefore=1)
 
-def spacer(h=3):
+def spacer(h=3.5):
     return Spacer(1, h)
 
 def section_gap():
     # Gap before each section heading (Education/Skills/Work Experience/...).
     # Separate from the smaller inter-entry spacer() below by design — this is
     # the one the user asked to widen; entry-to-entry spacing stays as-is.
-    return Spacer(1, 6)
+    return Spacer(1, 5.0)
 
 def two_col(left_para, right_text, styles):
     # A single-row, 2-column table. Verified this doesn't carry the multi-row/

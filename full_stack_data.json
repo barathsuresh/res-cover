@@ -1,0 +1,97 @@
+{
+  "name": "Barath Suresh",
+  "contact": "Arizona | (623) 212-9705 | bsures11@asu.edu | linkedin.com/in/barath-suresh/ | github.com/barathsuresh | barathsuresh.github.io",
+  "education": [
+    {
+      "school": "Arizona State University",
+      "location": "Tempe, AZ",
+      "degree": "Master of Science in Computer Science | GPA: 3.67/4.00",
+      "dates": "August 2025 – May 2027",
+      "extra": []
+    },
+    {
+      "school": "SASTRA Deemed University",
+      "location": "India",
+      "degree": "Bachelor of Technology in Computer Science",
+      "dates": "August 2020 – May 2024",
+      "extra": []
+    }
+  ],
+  "skills": [
+    ["Languages", "TypeScript, JavaScript, Java, Python, HTML5, CSS3, SQL"],
+    [
+      "Frontend",
+      "React, Redux, Responsive UI, Component Design, DOM Manipulation, WebSockets"
+    ],
+    [
+      "Backend & APIs",
+      "Spring Boot, Spring AI, Node.js, FastAPI, REST APIs, Microservices, Spring Security, JWT, OAuth 2.0"
+    ],
+    ["Databases & Caching", "PostgreSQL, Redis, Hazelcast, MongoDB, pgvector"],
+    [
+      "Cloud & DevOps",
+      "AWS, GCP, Docker, Docker Compose, CI/CD, Git, GitHub Actions, Linux"
+    ],
+    ["Practices & Tools", "Jira, End-to-End Testing, Agile"]
+  ],
+  "experience": [
+    {
+      "company": "TATA ELXSI LTD",
+      "role": "Software Engineer",
+      "location": "Chennai, India",
+      "dates": "December 2024 – July 2025",
+      "bullets": [
+        "Engineered an asynchronous bulk-import pipeline using Java, Spring Boot, and RabbitMQ for OTT content catalog metadata, eliminating UI timeouts and reducing processing time by 70% on 20,000-row files",
+        "Built catalog management screens using React, TypeScript, HTML, and CSS on top of Spring Boot REST APIs, showing upload status and row-level error reports to content operations users",
+        "Added a Hazelcast cache (Spring Cache) for frequently accessed catalog reads, with eviction when catalog data changes to keep content fresh",
+        "Secured 50+ REST APIs with role-based SSO using Spring Security, Azure AD OAuth 2.0, and JWT claims, cutting authorization latency from 100ms to 7ms",
+        "Owned end-to-end quality for the platform, running weekly E2E test cycles and raising, prioritizing, and tracking defects in Jira through to verified resolution"
+      ]
+    },
+    {
+      "company": "TATA ELXSI LTD",
+      "role": "Software Engineer Intern",
+      "location": "Bengaluru, India",
+      "dates": "January 2024 – June 2024",
+      "bullets": [
+        "Developed interactive monitoring interfaces using JavaScript, HTML/CSS, and WebSockets to stream live telemetry metrics and operational status for connected set-top box devices",
+        "Collaborated in Agile sprints with senior engineers to design PostgreSQL schemas and build Python FastAPI endpoints for ingesting and querying set-top box diagnostic event logs via Git workflows"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "title": "THROTTLR: Self-Serve Rate Limiting Platform",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/throttlr",
+      "tech": "React, TypeScript, Java, Spring Boot, Redis, GCP, Docker",
+      "bullets": [
+        "Developed a plug-and-play rate limiting management portal using React, TypeScript, and Java Spring Boot REST APIs, allowing developers to configure live API throttle rules while sustaining 109.5 req/sec (an 11.2x improvement) with zero errors on GCP Cloud Run",
+        "Designed real-time rule configuration dashboards and client usage analytics backed by atomic Redis Lua scripts across multiple rate-limiting algorithms",
+        "Automated CI/CD deployment pipelines using GitHub Actions and Terraform to provision scalable containerized environments with zero downtime"
+      ]
+    },
+    {
+      "title": "SIFT: Codebase Search & Retrieval Web Platform",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/sift",
+      "tech": "Python, TypeScript, PostgreSQL, pgvector, NVIDIA NIM, REST APIs",
+      "bullets": [
+        "Architected a semantic codebase Q&A platform using TypeScript, Python, and PostgreSQL pgvector to accelerate developer onboarding by answering repository architecture questions with exact file and line citations",
+        "Integrated NVIDIA NIM inference and tree-sitter AST parsing via REST APIs to ground user natural language queries with verified source code context",
+        "Optimized query latency by implementing bounded thread-pool concurrency and incremental caching to index multi-file repositories, boosting embedding throughput 3x on a 150K-chunk benchmark and cutting full re-index time from ~36 minutes to ~6 seconds"
+      ]
+    },
+    {
+      "title": "GEOLINK: Interactive Location Search & Discovery Platform",
+      "link": "GitHub",
+      "link_url": "https://github.com/barathsuresh/geolink",
+      "tech": "JavaScript, HTML/CSS, Go, PostgreSQL, Redis, Kafka, Docker",
+      "bullets": [
+        "Built an interactive map search UI using JavaScript, HTML/CSS, and Go with Redis geo-indexing to serve personalized, low-latency location suggestions based on IP location and search history across 12M records",
+        "Implemented asynchronous user interaction streaming using Kafka and PostgreSQL to process click-event analytics without blocking the live autocomplete path",
+        "Containerized frontend and backend services using Docker and configured multi-container integration tests for automated deployment validation"
+      ]
+    }
+  ]
+}

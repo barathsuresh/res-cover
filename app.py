@@ -279,7 +279,7 @@ def _job_card(row: tuple, expanded: bool = False):
                 st.rerun()
 
         # Retry
-        if status == "failed":
+        if status in ("failed", "done"):
             if st.button("↩️ Retry", key=f"retry_{job_id}"):
                 _update_job(job_id, status="pending", error=None)
                 st.rerun()
@@ -429,18 +429,28 @@ _QA_SYSTEM = (
     "description. Not about {first}'s experience.\n"
     "- Asked to LIST skills, languages, or technologies: give the coverage, grouped by area, naming "
     "the specific technologies. Do not narrow to one thing.\n"
-    "- Asked about EXPERIENCE, a project, or how something was handled: answer with the specific "
-    "work, what was done and what it changed, including the real number.\n"
+    "- Asked about EXPERIENCE, a project, or how something was handled: talk about it the way {first} "
+    "would actually recall it out loud to another engineer, in your own words, not the way it reads "
+    "on the resume. Mention at most ONE concrete number, only if it naturally supports the point you're "
+    "making — never stack two or three metrics into one answer just because the resume bullet has them. "
+    "If the number isn't needed to make the point land, leave it out entirely.\n"
     "- Asked an opinion or preference question: answer it directly.\n"
     "Length follows the question. A yes/no takes a sentence or two. A list question takes as long "
     "as the list. Do not pad and do not force everything to one shape.\n\n"
-    "REGISTER: neutral and professional. First person where the question is about {first}, "
-    "otherwise plain analysis. Direct declarative sentences. Contractions are fine.\n"
+    "VOICE: this is a spoken answer, not a written recap. Never reuse a resume bullet's exact phrasing "
+    "or sentence shape, even paraphrased close to word-for-word — say it the way it would actually come "
+    "out in conversation, which is messier and less quantified than the resume version. If the honest "
+    "answer to 'what changed' is a plain word like 'faster' or 'more reliable' rather than a specific "
+    "percentage, that is a fine and more natural answer than reciting the resume's number.\n\n"
+    "REGISTER: conversational but professional, like talking to a senior engineer you respect, not "
+    "reading a summary aloud. First person where the question is about {first}, otherwise plain "
+    "analysis. Direct declarative sentences. Contractions are fine.\n"
     "- No conversational openers: 'So,', 'Honestly,', 'I mean,', 'Well,', 'Look,'.\n"
     "- No filler: 'kind of', 'pretty much', 'a lot of', 'stuff', 'things like', \"y'know\", "
     "'I guess', 'sort of', 'basically', 'managed to', 'really just'.\n"
     "- No em dashes or en dashes anywhere. Use commas, periods, or 'and'.\n"
-    "- Exact numbers, never spoken rounding. '100ms to 7ms', not 'about 100ms'.\n"
+    "- When a number is used, state it plainly, no spoken rounding words like 'about' or 'roughly' "
+    "tacked onto a number you're already choosing to include. '100ms to 7ms', not 'about 100ms'.\n"
     "- Plain text only. No markdown, no bullet characters, no headings.\n\n"
     "TRUTH:\n"
     "- Every fact about {first} comes from the resume below. Never invent a project, a number, an "
@@ -781,7 +791,21 @@ elif page == "⚡ Quick Apply":
             conn.close()
 
             mode = "cover_letter" if run_mode == "Cover Letter Only" else "both"
-            with st.spinner("Generating..."):
+            import sys, io
+
+            log_box   = st.empty()
+            log_lines: list[str] = []
+
+            class _Cap(io.StringIO):
+                def write(self, s):
+                    super().write(s)
+                    if s.strip():
+                        log_lines.append(s.rstrip())
+                        log_box.code("\n".join(log_lines[-50:]))
+
+            old_stdout = sys.stdout
+            sys.stdout = _Cap()
+            try:
                 try:
                     company, role = _process_job(job_id, link.strip(), jd.strip(), company.strip(), role.strip(), cl_personalization.strip(), mode, force)
                     _update_job(job_id, status="done", company=company, role=role, error=None)
@@ -798,6 +822,8 @@ elif page == "⚡ Quick Apply":
                     st.session_state.pop("_qa_result", None)
                     st.error("Generation failed.")
                     st.code(err, language="python")
+            finally:
+                sys.stdout = old_stdout
 
     result = st.session_state.get("_qa_result")
     if result:
@@ -1072,6 +1098,7 @@ elif page == "▶️ Run Pipeline":
             old_stdout = sys.stdout
             sys.stdout = _Cap()
 
+            succeeded, failed = 0, 0
             try:
                 for job_id in to_run:
                     row = conn.execute(
@@ -1089,19 +1116,26 @@ elif page == "▶️ Run Pipeline":
                             "UPDATE jobs SET status='done', company=?, role=?, error=NULL WHERE id=?",
                             (final_company, final_role, jid),
                         )
+                        succeeded += 1
                     except Exception:
                         err = traceback.format_exc()
                         conn.execute(
                             "UPDATE jobs SET status='failed', error=? WHERE id=?",
                             (err, jid),
                         )
+                        failed += 1
                     conn.commit()
             finally:
                 sys.stdout = old_stdout
                 conn.close()
 
             log_box.code("\n".join(log_lines))
-            st.success("Done. Check Jobs page for results.")
+            if failed == 0:
+                st.success(f"Done — {succeeded} succeeded. Check Jobs page for results.")
+            elif succeeded == 0:
+                st.error(f"All {failed} job(s) failed. Check Jobs page for the error.")
+            else:
+                st.warning(f"{succeeded} succeeded, {failed} failed. Check Jobs page for details.")
 
 
 # ═══════════════════════════════════════════════
